@@ -103,6 +103,19 @@ The installer classifies the current state and acts accordingly:
 | custom user script or inline command | prompt with preview of the current command |
 | project-level `./.claude/settings.json` overrides user settings | warn, leave it alone |
 
+If you run the installer in a normal terminal and it finds another statusline, it asks:
+
+```text
+Detected an existing statusLine in ~/.claude/settings.json:
+  command: bash /Users/you/.claude/statusline-command.sh
+  source : custom
+
+What do you want to do?
+  [r] Replace it with claude-statusline (your current setup will be backed up)
+  [k] Keep your current statusline (script still installed for manual use)
+  [c] Cancel (no changes)
+```
+
 In every replace path, the installer creates timestamped backups:
 
 - `~/.claude/settings.json.bak.<timestamp>`
@@ -110,6 +123,30 @@ In every replace path, the installer creates timestamped backups:
 - the previous inline command saved as `~/.claude/statusline.previous.<timestamp>.txt` if it was inline
 
 `uninstall.sh` restores the latest backup → you go back to whatever you had before.
+
+### When should I use `--force`?
+
+Use `--force` only when you already want `~/.claude/settings.json` to point to `claude-statusline`, replacing whatever `statusLine` is currently there. It still creates backups first.
+
+Typical cases:
+
+- you saw `Existing statusLine state: custom` and want to replace that custom command,
+- you are upgrading/reinstalling from a script, CI job, IDE task, or any place where the installer cannot prompt,
+- you are migrating from another statusline package and do not need to review the prompt.
+
+Do not use `--force` if you only want to install the files for manual testing. Use `--keep-existing` instead.
+
+With the one-line installer, pass flags after `bash -s --`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tenondecrpc/claude-statusline/main/install.sh | bash -s -- --force
+```
+
+To install the files but keep your current `statusLine`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/tenondecrpc/claude-statusline/main/install.sh | bash -s -- --keep-existing
+```
 
 ### Non-interactive flags
 

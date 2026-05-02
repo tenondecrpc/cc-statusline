@@ -6,6 +6,7 @@
 #   ./install.sh --keep-existing     install files but don't touch settings.json if statusLine exists
 #   ./install.sh --abort-if-exists   exit non-zero if statusLine already exists (CI-friendly)
 #   ./install.sh --dry-run           print what would happen without writing
+#   ./install.sh --non-interactive   don't prompt; fail if a decision is needed
 
 set -uo pipefail
 
@@ -65,8 +66,15 @@ require_jq() {
 # Source files: prefer local repo if install.sh is run from inside it; otherwise download.
 SOURCE_DIR=""
 detect_source() {
-  local script_dir
-  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  local script_source script_dir
+  script_source="${BASH_SOURCE[0]-}"
+
+  if [ -n "$script_source" ] && [ -f "$script_source" ]; then
+    script_dir="$(cd "$(dirname "$script_source")" && pwd)"
+  else
+    script_dir="$(pwd -P)"
+  fi
+
   if [ -f "$script_dir/statusline.sh" ] && [ -d "$script_dir/lib" ] && [ -d "$script_dir/presets" ]; then
     SOURCE_DIR="$script_dir"
     info "Source: local repo at $SOURCE_DIR"
@@ -165,19 +173,35 @@ classify_existing() {
 
 prompt_action() {
   local cmd="$1" source="$2" choice
-  printf '\nDetected an existing statusLine in %s:\n' "$SETTINGS_FILE"
-  printf '  command: %s\n'   "$cmd"
-  printf '  source : %s\n\n' "$source"
-  printf 'What do you want to do?\n'
-  printf '  [r] Replace it with claude-statusline (your current setup will be backed up)\n'
-  printf '  [k] Keep your current statusline (script still installed for manual use)\n'
-  printf '  [c] Cancel (no changes)\n\n'
+
+  show_prompt() {
+    printf '\nDetected an existing statusLine in %s:\n' "$SETTINGS_FILE"
+    printf '  command: %s\n'   "$cmd"
+    printf '  source : %s\n\n' "$source"
+    printf 'What do you want to do?\n'
+    printf '  [r] Replace it with claude-statusline (your current setup will be backed up)\n'
+    printf '  [k] Keep your current statusline (script still installed for manual use)\n'
+    printf '  [c] Cancel (no changes)\n\n'
+  }
+
+  if ! { show_prompt >/dev/tty; } 2>/dev/null; then
+    show_prompt >&2
+  fi
+
   while true; do
-    printf '> '
-    if ! read -r choice </dev/tty 2>/dev/null; then
-      echo "cancel"
+    if { printf '> ' >/dev/tty && read -r choice </dev/tty; } 2>/dev/null; then
+      :
+    elif [ -t 0 ]; then
+      printf '> ' >&2
+      if ! read -r choice; then
+        echo "unavailable"
+        return
+      fi
+    else
+      echo "unavailable"
       return
     fi
+
     choice=$(printf '%s' "$choice" | tr '[:upper:]' '[:lower:]')
     case "$choice" in
       r|replace) echo "replace"; return ;;
@@ -291,10 +315,11 @@ main() {
       fi
 
       local action
-      if [ "$FORCE" -eq 1 ] || [ "$NON_INTERACTIVE" -eq 1 ] && [ "$FORCE" -eq 1 ]; then
+      if [ "$FORCE" -eq 1 ]; then
         action="replace"
       elif [ "$NON_INTERACTIVE" -eq 1 ]; then
-        warn "Existing statusLine ($state) and no TTY for prompt. Use --force or --keep-existing."
+        warn "Existing statusLine detected ($state); keeping it because no prompt is available."
+        info "Run with --force to replace it, or --keep-existing to keep it explicitly."
         exit 3
       else
         action=$(prompt_action "$cmd" "$state")
@@ -311,6 +336,15 @@ main() {
         cancel)
           info "Cancelled. No changes made to $SETTINGS_FILE."
           exit 0
+          ;;
+        unavailable)
+          warn "Existing statusLine detected ($state); keeping it because no prompt is available."
+          info "Run with --force to replace it, or --keep-existing to keep it explicitly."
+          exit 3
+          ;;
+        *)
+          err "Unexpected installer choice: $action"
+          exit 4
           ;;
       esac
       ;;
