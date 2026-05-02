@@ -2,7 +2,7 @@
 # Empty output = "hide this module".
 
 mod_model() {
-  local name id version short with_version with_effort effort out
+  local name id version version_re short with_version with_effort effort out
   name=$(printf '%s' "$INPUT_JSON" | jq -r '.model.display_name // empty')
   [ -z "$name" ] && return 0
 
@@ -17,7 +17,10 @@ mod_model() {
     if [ -n "$id" ]; then
       version=$(printf '%s' "$id" | sed -E 's/.*-([0-9]+)-([0-9]+)(-[0-9]{6,})?$/\1.\2/')
       if [ "$version" != "$id" ]; then
-        name="$name $version"
+        version_re="${version//./\\.}"
+        if [[ ! "$name" =~ (^|[^0-9])${version_re}([^0-9]|$) ]]; then
+          name="$name $version"
+        fi
       fi
     fi
   fi
@@ -64,8 +67,10 @@ basic_fg_color_for() {
 }
 
 basic_make_bar() {
-  local pct="$1" bg="$2" fg="$3" width=12 filled empty i
+  local pct="$1" bg="$2" fg="$3" width="${4:-12}" filled empty i
   filled=$(awk "BEGIN {printf \"%d\", int($pct / 100 * $width + 0.5)}")
+  [ "$filled" -lt 0 ] && filled=0
+  [ "$filled" -gt "$width" ] && filled="$width"
   empty=$((width - filled))
   local filled_str="" empty_str=""
   for ((i=0; i<filled; i++)); do filled_str+=" "; done
@@ -74,9 +79,17 @@ basic_make_bar() {
 }
 
 basic_make_empty_bar() {
-  local width=12 i empty_str=""
+  local width="${1:-12}" i empty_str=""
   for ((i=0; i<width; i++)); do empty_str+="⣿"; done
   printf "\033[2m\033[38;5;245m%s\033[0m" "$empty_str"
+}
+
+basic_render_progress() {
+  local pct="$1" width="${2:-12}" bg fg pct_label reset='\033[0m'
+  bg=$(basic_bg_color_for "$pct")
+  fg=$(basic_fg_color_for "$pct")
+  pct_label=$(awk -v v="$pct" 'BEGIN {printf "%.0f", v+0}')
+  printf "%s ${fg}%s%%${reset}" "$(basic_make_bar "$pct" "$bg" "$fg" "$width")" "$pct_label"
 }
 
 basic_format_time() {
@@ -95,7 +108,7 @@ mod_basic_statusline() {
   seven_reset=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.seven_day.resets_at // empty')
 
   local reset='\033[0m' yellow='\033[33m' dim='\033[2m' sep=' │ '
-  local part_model="" part_ctx part_5h part_7d bg fg pct t dt
+  local part_model="" part_ctx part_5h part_7d t dt
 
   if [ -n "$model" ]; then
     part_model="$(printf "${yellow}%s${reset}" "$model")"
@@ -103,19 +116,13 @@ mod_basic_statusline() {
   fi
 
   if [ -n "$used" ]; then
-    bg=$(basic_bg_color_for "$used")
-    fg=$(basic_fg_color_for "$used")
-    pct=$(printf "%.0f" "$used")
-    part_ctx="$(printf "ctx %s ${fg}%s%%${reset}" "$(basic_make_bar "$used" "$bg" "$fg")" "$pct")"
+    part_ctx="$(printf "ctx %s" "$(basic_render_progress "$used")")"
   else
     part_ctx="$(printf "ctx %s ${dim}--${reset}" "$(basic_make_empty_bar)")"
   fi
 
   if [ -n "$five_hour" ]; then
-    bg=$(basic_bg_color_for "$five_hour")
-    fg=$(basic_fg_color_for "$five_hour")
-    pct=$(printf "%.0f" "$five_hour")
-    part_5h="$(printf "5h %s ${fg}%s%%${reset}" "$(basic_make_bar "$five_hour" "$bg" "$fg")" "$pct")"
+    part_5h="$(printf "5h %s" "$(basic_render_progress "$five_hour")")"
     if [ -n "$five_reset" ]; then
       t=$(basic_format_time "$five_reset" "+%H:%M")
       [ -n "$t" ] && part_5h+="$(printf " ${dim}%s${reset}" "$t")"
@@ -125,10 +132,7 @@ mod_basic_statusline() {
   fi
 
   if [ -n "$seven_day" ]; then
-    bg=$(basic_bg_color_for "$seven_day")
-    fg=$(basic_fg_color_for "$seven_day")
-    pct=$(printf "%.0f" "$seven_day")
-    part_7d="$(printf "7d %s ${fg}%s%%${reset}" "$(basic_make_bar "$seven_day" "$bg" "$fg")" "$pct")"
+    part_7d="$(printf "7d %s" "$(basic_render_progress "$seven_day")")"
     if [ -n "$seven_reset" ]; then
       dt=$(basic_format_time "$seven_reset" "+%b %d %H:%M")
       [ -n "$dt" ] && part_7d+="$(printf " ${dim}%s${reset}" "$dt")"
@@ -201,20 +205,6 @@ mod_git() {
   csl_wrap "$color" "$out"
 }
 
-make_bar() {
-  local pct="$1" width="$2" filled empty bar i
-  filled=$((pct * width / 100))
-  [ "$filled" -lt 0 ] && filled=0
-  [ "$filled" -gt "$width" ] && filled="$width"
-  empty=$((width - filled))
-  bar=""
-  i=0
-  while [ "$i" -lt "$filled" ]; do bar="${bar}█"; i=$((i + 1)); done
-  i=0
-  while [ "$i" -lt "$empty"  ]; do bar="${bar}░"; i=$((i + 1)); done
-  printf '%s' "$bar"
-}
-
 threshold_color() {
   local pct="$1" warn="$2" crit="$3" ok_key="$4" warn_key="$5" crit_key="$6"
   if [ "$pct" -ge "$crit" ]; then
@@ -247,20 +237,15 @@ format_reset_time() {
 }
 
 mod_context_bar() {
-  local pct width label warn_at crit_at color bar
-  pct=$(printf '%s' "$INPUT_JSON" | jq -r '.context_window.used_percentage // 0' | awk '{printf "%d", $1}')
-  width=$(cfg '.modules.context_bar.width // 10')
+  local pct width label
+  pct=$(printf '%s' "$INPUT_JSON" | jq -r '.context_window.used_percentage // 0')
+  width=$(cfg '.modules.context_bar.width // 12')
   label=$(cfg '.modules.context_bar.label // "ctx"')
-  warn_at=$(cfg '.modules.context_bar.thresholds_pct[0] // 70')
-  crit_at=$(cfg '.modules.context_bar.thresholds_pct[1] // 90')
-
-  bar=$(make_bar "$pct" "$width")
-  color=$(threshold_color "$pct" "$warn_at" "$crit_at" "context_ok" "context_warn" "context_crit")
 
   if [ -n "$label" ] && [ "$label" != "null" ]; then
     printf '%s ' "$label"
   fi
-  csl_wrap "$color" "${bar} ${pct}%"
+  basic_render_progress "$pct" "$width"
 }
 
 mod_context_pct() {
@@ -274,17 +259,11 @@ mod_context_pct() {
 
 render_rate_segment() {
   local label="$1" pct="$2" resets="$3"
-  local pct_int width warn_at crit_at color bar reset_str
-  pct_int=$(awk -v v="$pct" 'BEGIN{printf "%d", v+0}')
-  width=$(cfg '.modules.rate_limit.bar_width // 10')
-  warn_at=$(cfg '.modules.rate_limit.thresholds_pct[0] // 60')
-  crit_at=$(cfg '.modules.rate_limit.thresholds_pct[1] // 80')
-
-  bar=$(make_bar "$pct_int" "$width")
-  color=$(threshold_color "$pct_int" "$warn_at" "$crit_at" "rate_ok" "rate_warn" "rate_crit")
+  local width reset_str
+  width=$(cfg '.modules.rate_limit.bar_width // 12')
 
   printf '%s ' "$label"
-  csl_wrap "$color" "${bar} ${pct_int}%"
+  basic_render_progress "$pct" "$width"
 
   if [ -n "$resets" ] && [ "$resets" != "null" ]; then
     reset_str=$(format_reset_time "$resets")

@@ -182,7 +182,7 @@ Default sin flags: prompt interactivo en C/D, idempotente en B, limpio en A/E.
 | `model` | `model.display_name` | Acepta `short` para acortar. |
 | `directory` | `workspace.current_dir` | Tilde-collapse + trunc. |
 | `git` | (ejecuta `git`) | Branch + counts (staged/unstaged/untracked) + ahead/behind. |
-| `context_bar` | `context_window.used_percentage` | Barra `▓░` de N chars + %. |
+| `context_bar` | `context_window.used_percentage` | Barra default de N chars + %. |
 | `context_pct` | idem | Solo el %. |
 | `cost` | `cost.total_cost_usd` | Hide-when-zero opcional. |
 | `rate_limit` | `rate_limits.five_hour.*`, `seven_day.*` | Skip si ausente (no-Pro). |

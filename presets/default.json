@@ -8,8 +8,8 @@
     "model": { "with_version": true, "with_effort": true },
     "directory": { "tilde": true, "truncate": 30 },
     "git": { "show_status": true, "show_ahead_behind": true },
-    "context_bar": { "label": "ctx", "width": 10, "thresholds_pct": [70, 90] },
-    "rate_limit": { "bar_width": 10, "thresholds_pct": [60, 80] },
+    "context_bar": { "label": "ctx", "width": 12, "thresholds_pct": [70, 90] },
+    "rate_limit": { "bar_width": 12, "thresholds_pct": [60, 80] },
     "cost": { "format": "$%.2f", "hide_below": 0.01 }
   },
   "colors": {

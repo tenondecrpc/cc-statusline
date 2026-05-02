@@ -80,10 +80,10 @@ Each `lines` entry becomes a row. Most modules return empty when their data is a
 | `effort` | reasoning effort level alone (`low`/`medium`/`high`/`xhigh`/`max`) |
 | `directory` | current dir (tilde-collapsed, truncated) |
 | `git` | branch + status counts (`+staged !unstaged ?untracked`) + ahead/behind |
-| `context_bar` | `ctx █░ NN%`, threshold-colored |
+| `context_bar` | `ctx` + the default 12-cell progress bar + percentage |
 | `context_pct` | percentage only, threshold-colored |
-| `rate_5h` | `5h █░ NN%` + reset time (`HH:MM` today / `Mon DD HH:MM` other day) |
-| `rate_7d` | `7d █░ NN%` + reset time |
+| `rate_5h` | `5h` + the default 12-cell progress bar + percentage + reset time (`HH:MM` today / `Mon DD HH:MM` other day) |
+| `rate_7d` | `7d` + the default 12-cell progress bar + percentage + reset time |
 | `cost` | session cost (`$0.42`); hides under `hide_below` |
 | `session_timer` | wall-clock duration (`1h23m` / `45m` / `12s`) |
 | `lines_changed` | `+added -removed` |

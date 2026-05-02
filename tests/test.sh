@@ -32,11 +32,38 @@ run_case() {
   echo
 }
 
+run_developer_regressions() {
+  local out
+  printf '{ "preset": "developer" }\n' > "$TMP_CONFIG/config.json"
+  out=$(NO_COLOR=1 "$STATUSLINE" < "$TESTS_DIR/fixtures/display_name_with_version.json" 2>&1)
+
+  if [[ "$out" == *"4.7 4.7"* ]]; then
+    printf '\033[31m✗\033[0m developer regression: duplicated model version\n'
+    printf '%s\n' "$out" | sed 's/^/    /'
+    FAIL=$((FAIL + 1))
+  elif [[ "$out" == *"█"* || "$out" == *"░"* ]]; then
+    printf '\033[31m✗\033[0m developer regression: non-default progress bar glyphs\n'
+    printf '%s\n' "$out" | sed 's/^/    /'
+    FAIL=$((FAIL + 1))
+  elif [[ "$out" != *"⣿"* ]]; then
+    printf '\033[31m✗\033[0m developer regression: missing default progress bar glyph\n'
+    printf '%s\n' "$out" | sed 's/^/    /'
+    FAIL=$((FAIL + 1))
+  else
+    printf '\033[32m✓\033[0m developer regressions\n'
+    printf '%s\n' "$out" | sed 's/^/    /'
+    PASS=$((PASS + 1))
+  fi
+  echo
+}
+
 for fx in min with_rate_limits with_worktree vim_mode; do
   for ps in minimal default developer; do
     run_case "${fx}.json" "$ps"
   done
 done
+
+run_developer_regressions
 
 printf '\nPass: %d, Fail: %d\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
