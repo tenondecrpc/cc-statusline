@@ -5,6 +5,8 @@ Bash + `jq`. No runtime to install. No TUI to learn. One-command install with sa
 
 Default after first install:
 
+![Default claude-statusline output](./screenshot.png)
+
 ```
 Opus xhigh │ ctx        ⣿⣿⣿⣿⣿ 58% │ 5h          ⣿⣿ 76% 22:00 │ 7d    ⣿⣿⣿⣿⣿⣿⣿⣿ 29% May 06 02:00
 ```
