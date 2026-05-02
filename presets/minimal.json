@@ -1,0 +1,17 @@
+{
+  "preset": "minimal",
+  "separator": " · ",
+  "lines": [
+    ["model", "directory", "git"]
+  ],
+  "modules": {
+    "directory": { "tilde": true, "truncate": 25 },
+    "git": { "show_status": false, "show_ahead_behind": false }
+  },
+  "colors": {
+    "model": "cyan",
+    "directory": "blue",
+    "git_clean": "green",
+    "git_dirty": "yellow"
+  }
+}

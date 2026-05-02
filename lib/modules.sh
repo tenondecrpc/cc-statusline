@@ -1,0 +1,279 @@
+# Module implementations. Each `mod_<name>` writes the rendered (colored) text to stdout.
+# Empty output = "hide this module".
+
+mod_model() {
+  local name id version short with_version with_effort effort out
+  name=$(printf '%s' "$INPUT_JSON" | jq -r '.model.display_name // empty')
+  [ -z "$name" ] && return 0
+
+  short=$(cfg '.modules.model.short // false')
+  if [ "$short" = "true" ]; then
+    name=$(printf '%s' "$name" | awk '{print $1}')
+  fi
+
+  with_version=$(cfg '.modules.model.with_version // false')
+  if [ "$with_version" = "true" ]; then
+    id=$(printf '%s' "$INPUT_JSON" | jq -r '.model.id // empty')
+    if [ -n "$id" ]; then
+      version=$(printf '%s' "$id" | sed -E 's/.*-([0-9]+)-([0-9]+)(-[0-9]{6,})?$/\1.\2/')
+      if [ "$version" != "$id" ]; then
+        name="$name $version"
+      fi
+    fi
+  fi
+
+  out=$(csl_wrap "$(cfg '.colors.model // "white"')" "$name")
+
+  with_effort=$(cfg '.modules.model.with_effort // false')
+  if [ "$with_effort" = "true" ]; then
+    effort=$(printf '%s' "$INPUT_JSON" | jq -r '.effort.level // empty')
+    if [ -n "$effort" ]; then
+      out="$out $(csl_wrap "$(cfg '.colors.effort // "gray"')" "$effort")"
+    fi
+  fi
+  printf '%s' "$out"
+}
+
+mod_effort() {
+  local level
+  level=$(printf '%s' "$INPUT_JSON" | jq -r '.effort.level // empty')
+  [ -z "$level" ] && return 0
+  csl_wrap "$(cfg '.colors.effort // "gray"')" "$level"
+}
+
+mod_directory() {
+  local dir tilde truncate
+  dir=$(printf '%s' "$INPUT_JSON" | jq -r '.workspace.current_dir // .cwd // empty')
+  [ -z "$dir" ] && return 0
+  tilde=$(cfg '.modules.directory.tilde // true')
+  truncate=$(cfg '.modules.directory.truncate // 30')
+  if [ "$tilde" = "true" ]; then
+    dir="${dir/#$HOME/~}"
+  fi
+  if [ "${#dir}" -gt "$truncate" ]; then
+    local keep=$((truncate - 1))
+    dir="…${dir: -$keep}"
+  fi
+  csl_wrap "$(cfg '.colors.directory // "blue"')" "$dir"
+}
+
+mod_git() {
+  git_in_repo || return 0
+  local branch staged=0 unstaged=0 untracked=0 ahead=0 behind=0 total=0
+  branch=$(git_branch_name)
+  [ -z "$branch" ] && return 0
+
+  local show_status show_ahead_behind out
+  show_status=$(cfg '.modules.git.show_status // true')
+  show_ahead_behind=$(cfg '.modules.git.show_ahead_behind // true')
+  out="$branch"
+
+  if [ "$show_status" = "true" ]; then
+    read -r staged unstaged untracked <<< "$(git_status_counts)"
+    total=$((staged + unstaged + untracked))
+    if [ "$total" -gt 0 ]; then
+      out+=" ●"
+      [ "$staged" -gt 0 ]    && out+=" +$staged"
+      [ "$unstaged" -gt 0 ]  && out+=" !$unstaged"
+      [ "$untracked" -gt 0 ] && out+=" ?$untracked"
+    fi
+  fi
+
+  if [ "$show_ahead_behind" = "true" ]; then
+    read -r ahead behind <<< "$(git_ahead_behind)"
+    [ "$ahead" -gt 0 ]  && out+=" ↑$ahead"
+    [ "$behind" -gt 0 ] && out+=" ↓$behind"
+  fi
+
+  local color
+  if [ "$total" -gt 0 ]; then
+    color=$(cfg '.colors.git_dirty // "yellow"')
+  else
+    color=$(cfg '.colors.git_clean // "green"')
+  fi
+  csl_wrap "$color" "$out"
+}
+
+make_bar() {
+  local pct="$1" width="$2" filled empty bar i
+  filled=$((pct * width / 100))
+  [ "$filled" -lt 0 ] && filled=0
+  [ "$filled" -gt "$width" ] && filled="$width"
+  empty=$((width - filled))
+  bar=""
+  i=0
+  while [ "$i" -lt "$filled" ]; do bar="${bar}█"; i=$((i + 1)); done
+  i=0
+  while [ "$i" -lt "$empty"  ]; do bar="${bar}░"; i=$((i + 1)); done
+  printf '%s' "$bar"
+}
+
+threshold_color() {
+  local pct="$1" warn="$2" crit="$3" ok_key="$4" warn_key="$5" crit_key="$6"
+  if [ "$pct" -ge "$crit" ]; then
+    cfg ".colors.${crit_key} // \"red\""
+  elif [ "$pct" -ge "$warn" ]; then
+    cfg ".colors.${warn_key} // \"yellow\""
+  else
+    cfg ".colors.${ok_key} // \"green\""
+  fi
+}
+
+# Format epoch seconds as "HH:MM" (today) or "Mon DD HH:MM" (other day).
+format_reset_time() {
+  local epoch="$1" today reset_day
+  [ -z "$epoch" ] || [ "$epoch" = "null" ] && return 0
+  today=$(date +"%Y-%m-%d" 2>/dev/null) || return 0
+  if reset_day=$(date -r "$epoch" +"%Y-%m-%d" 2>/dev/null); then
+    if [ "$today" = "$reset_day" ]; then
+      date -r "$epoch" +"%H:%M"
+    else
+      date -r "$epoch" +"%b %d %H:%M"
+    fi
+  elif reset_day=$(date -d "@$epoch" +"%Y-%m-%d" 2>/dev/null); then
+    if [ "$today" = "$reset_day" ]; then
+      date -d "@$epoch" +"%H:%M"
+    else
+      date -d "@$epoch" +"%b %d %H:%M"
+    fi
+  fi
+}
+
+mod_context_bar() {
+  local pct width label warn_at crit_at color bar
+  pct=$(printf '%s' "$INPUT_JSON" | jq -r '.context_window.used_percentage // 0' | awk '{printf "%d", $1}')
+  width=$(cfg '.modules.context_bar.width // 10')
+  label=$(cfg '.modules.context_bar.label // "ctx"')
+  warn_at=$(cfg '.modules.context_bar.thresholds_pct[0] // 70')
+  crit_at=$(cfg '.modules.context_bar.thresholds_pct[1] // 90')
+
+  bar=$(make_bar "$pct" "$width")
+  color=$(threshold_color "$pct" "$warn_at" "$crit_at" "context_ok" "context_warn" "context_crit")
+
+  if [ -n "$label" ] && [ "$label" != "null" ]; then
+    printf '%s ' "$label"
+  fi
+  csl_wrap "$color" "${bar} ${pct}%"
+}
+
+mod_context_pct() {
+  local pct warn_at crit_at color
+  pct=$(printf '%s' "$INPUT_JSON" | jq -r '.context_window.used_percentage // 0' | awk '{printf "%d", $1}')
+  warn_at=$(cfg '.modules.context_bar.thresholds_pct[0] // 70')
+  crit_at=$(cfg '.modules.context_bar.thresholds_pct[1] // 90')
+  color=$(threshold_color "$pct" "$warn_at" "$crit_at" "context_ok" "context_warn" "context_crit")
+  csl_wrap "$color" "ctx ${pct}%"
+}
+
+render_rate_segment() {
+  local label="$1" pct="$2" resets="$3"
+  local pct_int width warn_at crit_at color bar reset_str
+  pct_int=$(awk -v v="$pct" 'BEGIN{printf "%d", v+0}')
+  width=$(cfg '.modules.rate_limit.bar_width // 10')
+  warn_at=$(cfg '.modules.rate_limit.thresholds_pct[0] // 60')
+  crit_at=$(cfg '.modules.rate_limit.thresholds_pct[1] // 80')
+
+  bar=$(make_bar "$pct_int" "$width")
+  color=$(threshold_color "$pct_int" "$warn_at" "$crit_at" "rate_ok" "rate_warn" "rate_crit")
+
+  printf '%s ' "$label"
+  csl_wrap "$color" "${bar} ${pct_int}%"
+
+  if [ -n "$resets" ] && [ "$resets" != "null" ]; then
+    reset_str=$(format_reset_time "$resets")
+    if [ -n "$reset_str" ]; then
+      printf ' '
+      csl_wrap "$(cfg '.colors.rate_reset // "gray"')" "$reset_str"
+    fi
+  fi
+}
+
+mod_rate_5h() {
+  local pct resets
+  pct=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.five_hour.used_percentage // empty')
+  [ -z "$pct" ] && return 0
+  resets=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.five_hour.resets_at // empty')
+  render_rate_segment "5h" "$pct" "$resets"
+}
+
+mod_rate_7d() {
+  local pct resets
+  pct=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+  [ -z "$pct" ] && return 0
+  resets=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.seven_day.resets_at // empty')
+  render_rate_segment "7d" "$pct" "$resets"
+}
+
+mod_cost() {
+  local cost hide_below format skip formatted
+  cost=$(printf '%s' "$INPUT_JSON" | jq -r '.cost.total_cost_usd // 0')
+  hide_below=$(cfg '.modules.cost.hide_below // 0')
+  format=$(cfg '.modules.cost.format // "$%.2f"')
+
+  skip=$(awk -v c="$cost" -v h="$hide_below" 'BEGIN { print (c+0 < h+0) ? "1" : "0" }')
+  [ "$skip" = "1" ] && return 0
+
+  formatted=$(awk -v c="$cost" -v f="$format" 'BEGIN { printf f, c+0 }')
+  csl_wrap "$(cfg '.colors.cost // "magenta"')" "$formatted"
+}
+
+mod_rate_limit() {
+  local five seven text=""
+  five=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.five_hour.used_percentage // empty')
+  seven=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+  if [ -n "$five" ]; then
+    text="5h $(awk -v v="$five" 'BEGIN{printf "%.0f", v+0}')%"
+  fi
+  if [ -n "$seven" ]; then
+    [ -n "$text" ] && text+=" "
+    text+="7d $(awk -v v="$seven" 'BEGIN{printf "%.0f", v+0}')%"
+  fi
+  [ -z "$text" ] && return 0
+  csl_wrap "$(cfg '.colors.rate_limit // "gray"')" "$text"
+}
+
+mod_session_timer() {
+  local ms s h m out
+  ms=$(printf '%s' "$INPUT_JSON" | jq -r '.cost.total_duration_ms // empty')
+  [ -z "$ms" ] || [ "$ms" = "0" ] && return 0
+  s=$((ms / 1000))
+  h=$((s / 3600))
+  m=$(( (s % 3600) / 60 ))
+  if [ "$h" -gt 0 ]; then
+    out="${h}h${m}m"
+  elif [ "$m" -gt 0 ]; then
+    out="${m}m"
+  else
+    out="${s}s"
+  fi
+  csl_wrap "$(cfg '.colors.session_timer // "gray"')" "$out"
+}
+
+mod_lines_changed() {
+  local added removed
+  added=$(printf '%s' "$INPUT_JSON" | jq -r '.cost.total_lines_added // 0')
+  removed=$(printf '%s' "$INPUT_JSON" | jq -r '.cost.total_lines_removed // 0')
+  if [ "$added" -eq 0 ] && [ "$removed" -eq 0 ]; then return 0; fi
+  csl_wrap "$(cfg '.colors.lines_changed // "gray"')" "+${added} -${removed}"
+}
+
+mod_vim_mode() {
+  local mode
+  mode=$(printf '%s' "$INPUT_JSON" | jq -r '.vim.mode // empty')
+  [ -z "$mode" ] && return 0
+  csl_wrap "$(cfg '.colors.vim_mode // "magenta"')" "[$mode]"
+}
+
+mod_worktree() {
+  local name
+  name=$(printf '%s' "$INPUT_JSON" | jq -r '.worktree.name // .workspace.git_worktree // empty')
+  [ -z "$name" ] && return 0
+  csl_wrap "$(cfg '.colors.worktree // "blue"')" "wt:$name"
+}
+
+mod_agent() {
+  local name
+  name=$(printf '%s' "$INPUT_JSON" | jq -r '.agent.name // empty')
+  [ -z "$name" ] && return 0
+  csl_wrap "$(cfg '.colors.agent // "magenta"')" "@$name"
+}

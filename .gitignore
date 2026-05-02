@@ -1,0 +1,4 @@
+*.bak.*
+*.previous.*.txt
+.DS_Store
+/tmp/

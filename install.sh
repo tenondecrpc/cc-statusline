@@ -1,0 +1,322 @@
+#!/usr/bin/env bash
+# claude-statusline installer.
+# Usage:
+#   ./install.sh                     interactive (default)
+#   ./install.sh --force             replace any existing statusLine without asking
+#   ./install.sh --keep-existing     install files but don't touch settings.json if statusLine exists
+#   ./install.sh --abort-if-exists   exit non-zero if statusLine already exists (CI-friendly)
+#   ./install.sh --dry-run           print what would happen without writing
+
+set -uo pipefail
+
+REPO_URL="${CSL_REPO_URL:-https://github.com/<owner>/claude-statusline}"
+INSTALL_DIR="${CSL_INSTALL_DIR:-$HOME/.local/share/claude-statusline}"
+CONFIG_DIR="${CSL_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/claude-statusline}"
+CONFIG_FILE="$CONFIG_DIR/config.json"
+SETTINGS_FILE="${CSL_SETTINGS_FILE:-$HOME/.claude/settings.json}"
+TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+
+FORCE=0
+KEEP_EXISTING=0
+ABORT_IF_EXISTS=0
+DRY_RUN=0
+NON_INTERACTIVE=0
+
+info() { printf '\033[36m▸\033[0m %s\n' "$*"; }
+ok()   { printf '\033[32m✓\033[0m %s\n' "$*"; }
+warn() { printf '\033[33m!\033[0m %s\n' "$*"; }
+err()  { printf '\033[31m✗\033[0m %s\n' "$*" >&2; }
+
+usage() {
+  sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'
+}
+
+parse_args() {
+  for arg in "$@"; do
+    case "$arg" in
+      --force)            FORCE=1 ;;
+      --keep-existing)    KEEP_EXISTING=1 ;;
+      --abort-if-exists)  ABORT_IF_EXISTS=1 ;;
+      --dry-run)          DRY_RUN=1 ;;
+      --non-interactive)  NON_INTERACTIVE=1 ;;
+      -h|--help)          usage; exit 0 ;;
+      *) err "unknown flag: $arg"; usage; exit 1 ;;
+    esac
+  done
+  if [ ! -t 0 ] && [ ! -e /dev/tty ]; then
+    NON_INTERACTIVE=1
+  fi
+}
+
+require_jq() {
+  if command -v jq >/dev/null 2>&1; then
+    return
+  fi
+  err "jq is required but not installed."
+  if   command -v brew    >/dev/null 2>&1; then info "Run: brew install jq"
+  elif command -v apt-get >/dev/null 2>&1; then info "Run: sudo apt-get install -y jq"
+  elif command -v dnf     >/dev/null 2>&1; then info "Run: sudo dnf install -y jq"
+  elif command -v pacman  >/dev/null 2>&1; then info "Run: sudo pacman -S jq"
+  else                                          info "See https://jqlang.github.io/jq/download/"
+  fi
+  exit 1
+}
+
+# Source files: prefer local repo if install.sh is run from inside it; otherwise download.
+SOURCE_DIR=""
+detect_source() {
+  local script_dir
+  script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [ -f "$script_dir/statusline.sh" ] && [ -d "$script_dir/lib" ] && [ -d "$script_dir/presets" ]; then
+    SOURCE_DIR="$script_dir"
+    info "Source: local repo at $SOURCE_DIR"
+    return
+  fi
+  SOURCE_DIR="$(mktemp -d)"
+  info "Source: downloading from $REPO_URL"
+  if ! curl -fsSL "${REPO_URL}/archive/refs/heads/main.tar.gz" \
+      | tar -xz -C "$SOURCE_DIR" --strip-components=1; then
+    err "Download failed. Set CSL_REPO_URL to a working repo or clone manually."
+    exit 1
+  fi
+}
+
+copy_files() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    info "DRY RUN: would copy files to $INSTALL_DIR"
+    return
+  fi
+  if [ "$SOURCE_DIR" = "$INSTALL_DIR" ]; then
+    info "Already at $INSTALL_DIR, skipping copy"
+    return
+  fi
+  mkdir -p "$INSTALL_DIR"
+  cp "$SOURCE_DIR/statusline.sh" "$INSTALL_DIR/"
+  rm -rf "$INSTALL_DIR/lib" "$INSTALL_DIR/presets"
+  cp -r "$SOURCE_DIR/lib"     "$INSTALL_DIR/"
+  cp -r "$SOURCE_DIR/presets" "$INSTALL_DIR/"
+  if [ -f "$SOURCE_DIR/uninstall.sh" ]; then
+    cp "$SOURCE_DIR/uninstall.sh" "$INSTALL_DIR/"
+    chmod +x "$INSTALL_DIR/uninstall.sh"
+  fi
+  chmod +x "$INSTALL_DIR/statusline.sh"
+  ok "Installed files → $INSTALL_DIR"
+}
+
+ensure_user_config() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    info "DRY RUN: would ensure config at $CONFIG_FILE"
+    return
+  fi
+  mkdir -p "$CONFIG_DIR"
+  if [ ! -f "$CONFIG_FILE" ]; then
+    printf '{ "preset": "default" }\n' > "$CONFIG_FILE"
+    ok "Created default config → $CONFIG_FILE"
+  else
+    info "Kept existing config → $CONFIG_FILE"
+  fi
+}
+
+# Expand a leading ~ in a path.
+expand_tilde() {
+  local p="$1"
+  case "$p" in
+    "~"|"~/"*) printf '%s' "${p/#\~/$HOME}" ;;
+    *) printf '%s' "$p" ;;
+  esac
+}
+
+# Echoes one of: absent | none | ours | ccstatusline | felipeelias | nilbuild | custom
+classify_existing() {
+  if [ ! -f "$SETTINGS_FILE" ]; then
+    echo "absent"
+    return
+  fi
+  if ! jq -e . "$SETTINGS_FILE" >/dev/null 2>&1; then
+    echo "absent"
+    return
+  fi
+  if ! jq -e '.statusLine' "$SETTINGS_FILE" >/dev/null 2>&1; then
+    echo "none"
+    return
+  fi
+
+  local cmd expanded
+  cmd=$(jq -r '.statusLine.command // ""' "$SETTINGS_FILE")
+  expanded=$(expand_tilde "$cmd")
+
+  case "$cmd" in
+    *"claude-statusline/statusline.sh"*) echo "ours"; return ;;
+    *ccstatusline*)                       echo "ccstatusline"; return ;;
+    *"claude-statusline prompt"*)         echo "felipeelias"; return ;;
+  esac
+
+  if [ -f "$expanded" ]; then
+    if grep -q "claude-statusline:v" "$expanded" 2>/dev/null; then
+      echo "ours"; return
+    fi
+    if head -10 "$expanded" 2>/dev/null | grep -qiE "kamranahmedse|nilbuild"; then
+      echo "nilbuild"; return
+    fi
+  fi
+
+  echo "custom"
+}
+
+prompt_action() {
+  local cmd="$1" source="$2" choice
+  printf '\nDetected an existing statusLine in %s:\n' "$SETTINGS_FILE"
+  printf '  command: %s\n'   "$cmd"
+  printf '  source : %s\n\n' "$source"
+  printf 'What do you want to do?\n'
+  printf '  [r] Replace it with claude-statusline (your current setup will be backed up)\n'
+  printf '  [k] Keep your current statusline (script still installed for manual use)\n'
+  printf '  [c] Cancel (no changes)\n\n'
+  while true; do
+    printf '> '
+    if ! read -r choice </dev/tty 2>/dev/null; then
+      echo "cancel"
+      return
+    fi
+    choice=$(printf '%s' "$choice" | tr '[:upper:]' '[:lower:]')
+    case "$choice" in
+      r|replace) echo "replace"; return ;;
+      k|keep)    echo "keep"; return ;;
+      c|cancel|"") echo "cancel"; return ;;
+    esac
+  done
+}
+
+backup_settings_and_script() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    info "DRY RUN: would back up $SETTINGS_FILE and any referenced script"
+    return
+  fi
+  if [ -f "$SETTINGS_FILE" ]; then
+    cp "$SETTINGS_FILE" "${SETTINGS_FILE}.bak.${TIMESTAMP}"
+    ok "Backed up settings.json → ${SETTINGS_FILE}.bak.${TIMESTAMP}"
+  fi
+  local cmd expanded
+  cmd=$(jq -r '.statusLine.command // ""' "$SETTINGS_FILE" 2>/dev/null || true)
+  [ -z "$cmd" ] && return
+  expanded=$(expand_tilde "$cmd")
+  if [ -f "$expanded" ] && [ "$expanded" != "$INSTALL_DIR/statusline.sh" ]; then
+    cp "$expanded" "${expanded}.bak.${TIMESTAMP}"
+    ok "Backed up previous script → ${expanded}.bak.${TIMESTAMP}"
+  elif [ -n "$cmd" ] && [ ! -f "$expanded" ]; then
+    mkdir -p "$HOME/.claude"
+    printf '%s\n' "$cmd" > "$HOME/.claude/statusline.previous.${TIMESTAMP}.txt"
+    ok "Saved previous inline command → $HOME/.claude/statusline.previous.${TIMESTAMP}.txt"
+  fi
+}
+
+write_settings() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    info "DRY RUN: would write statusLine to $SETTINGS_FILE pointing at $INSTALL_DIR/statusline.sh"
+    return
+  fi
+  mkdir -p "$(dirname "$SETTINGS_FILE")"
+  if [ ! -f "$SETTINGS_FILE" ] || ! jq -e . "$SETTINGS_FILE" >/dev/null 2>&1; then
+    echo '{}' > "$SETTINGS_FILE"
+  fi
+  local tmp
+  tmp="$(mktemp)"
+  jq --arg cmd "$INSTALL_DIR/statusline.sh" \
+     '.statusLine = { "type": "command", "command": $cmd, "padding": 1 }' \
+     "$SETTINGS_FILE" > "$tmp"
+  mv "$tmp" "$SETTINGS_FILE"
+  ok "Wrote statusLine → $SETTINGS_FILE"
+}
+
+warn_project_override() {
+  local proj="./.claude/settings.json"
+  if [ -f "$proj" ] && jq -e '.statusLine' "$proj" >/dev/null 2>&1; then
+    warn "Project-level statusLine in $proj will override the user-level one in this directory."
+  fi
+}
+
+print_summary() {
+  cat <<EOF
+
+$(ok "claude-statusline ready")
+
+  Script    : $INSTALL_DIR/statusline.sh
+  Config    : $CONFIG_FILE
+  Settings  : $SETTINGS_FILE
+
+  Try it locally:
+    echo '{"model":{"display_name":"Sonnet"},"workspace":{"current_dir":"'\$PWD'"},"context_window":{"used_percentage":42},"cost":{"total_cost_usd":0.12,"total_duration_ms":60000,"total_lines_added":0,"total_lines_removed":0}}' \\
+      | $INSTALL_DIR/statusline.sh
+
+  Change preset:
+    edit $CONFIG_FILE → set "preset" to "minimal", "default", or "developer"
+
+  Uninstall:
+    $INSTALL_DIR/uninstall.sh
+EOF
+}
+
+main() {
+  parse_args "$@"
+  require_jq
+  detect_source
+  copy_files
+  ensure_user_config
+  warn_project_override
+
+  local state
+  state=$(classify_existing)
+  info "Existing statusLine state: $state"
+
+  case "$state" in
+    absent|none)
+      backup_settings_and_script
+      write_settings
+      ;;
+    ours)
+      ok "claude-statusline already configured. Idempotent re-run, settings unchanged."
+      ;;
+    ccstatusline|felipeelias|nilbuild|custom)
+      local cmd
+      cmd=$(jq -r '.statusLine.command // ""' "$SETTINGS_FILE")
+
+      if [ "$ABORT_IF_EXISTS" -eq 1 ]; then
+        err "Existing statusLine detected ($state). Aborting (--abort-if-exists)."
+        exit 2
+      fi
+      if [ "$KEEP_EXISTING" -eq 1 ]; then
+        warn "Existing statusLine detected ($state). Keeping it; script available at $INSTALL_DIR/statusline.sh."
+        print_summary
+        return
+      fi
+
+      local action
+      if [ "$FORCE" -eq 1 ] || [ "$NON_INTERACTIVE" -eq 1 ] && [ "$FORCE" -eq 1 ]; then
+        action="replace"
+      elif [ "$NON_INTERACTIVE" -eq 1 ]; then
+        warn "Existing statusLine ($state) and no TTY for prompt. Use --force or --keep-existing."
+        exit 3
+      else
+        action=$(prompt_action "$cmd" "$state")
+      fi
+
+      case "$action" in
+        replace)
+          backup_settings_and_script
+          write_settings
+          ;;
+        keep)
+          warn "Kept your existing statusline. Our script is at $INSTALL_DIR/statusline.sh for manual use."
+          ;;
+        cancel)
+          info "Cancelled. No changes made to $SETTINGS_FILE."
+          exit 0
+          ;;
+      esac
+      ;;
+  esac
+
+  print_summary
+}
+
+main "$@"

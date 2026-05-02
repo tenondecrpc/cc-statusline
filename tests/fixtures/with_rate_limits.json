@@ -1,0 +1,17 @@
+{
+  "model": { "id": "claude-opus-4-7", "display_name": "Opus" },
+  "workspace": { "current_dir": "/tmp" },
+  "cwd": "/tmp",
+  "effort": { "level": "xhigh" },
+  "cost": {
+    "total_cost_usd": 1.45,
+    "total_duration_ms": 600000,
+    "total_lines_added": 156,
+    "total_lines_removed": 23
+  },
+  "context_window": { "used_percentage": 58 },
+  "rate_limits": {
+    "five_hour": { "used_percentage": 76, "resets_at": 1778162400 },
+    "seven_day": { "used_percentage": 29, "resets_at": 1778457600 }
+  }
+}
