@@ -1,8 +1,8 @@
 {
   "preset": "default",
-  "separator": " | ",
+  "separator": " │ ",
   "lines": [
-    ["model", "context_bar", "rate_5h", "rate_7d"]
+    ["basic_statusline"]
   ],
   "modules": {
     "model": { "with_version": true, "with_effort": true },

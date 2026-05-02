@@ -41,6 +41,113 @@ mod_effort() {
   csl_wrap "$(cfg '.colors.effort // "gray"')" "$level"
 }
 
+basic_bg_color_for() {
+  local pct="$1"
+  if awk "BEGIN {exit !($pct >= 80)}"; then
+    printf '\033[48;5;196m'
+  elif awk "BEGIN {exit !($pct >= 60)}"; then
+    printf '\033[48;5;220m'
+  else
+    printf '\033[48;5;154m'
+  fi
+}
+
+basic_fg_color_for() {
+  local pct="$1"
+  if awk "BEGIN {exit !($pct >= 80)}"; then
+    printf '\033[38;5;196m'
+  elif awk "BEGIN {exit !($pct >= 60)}"; then
+    printf '\033[38;5;220m'
+  else
+    printf '\033[38;5;154m'
+  fi
+}
+
+basic_make_bar() {
+  local pct="$1" bg="$2" fg="$3" width=12 filled empty i
+  filled=$(awk "BEGIN {printf \"%d\", int($pct / 100 * $width + 0.5)}")
+  empty=$((width - filled))
+  local filled_str="" empty_str=""
+  for ((i=0; i<filled; i++)); do filled_str+=" "; done
+  for ((i=0; i<empty; i++)); do empty_str+="⣿"; done
+  printf "${bg}%s\033[0m\033[2m${fg}%s\033[0m" "$filled_str" "$empty_str"
+}
+
+basic_make_empty_bar() {
+  local width=12 i empty_str=""
+  for ((i=0; i<width; i++)); do empty_str+="⣿"; done
+  printf "\033[2m\033[38;5;245m%s\033[0m" "$empty_str"
+}
+
+basic_format_time() {
+  local epoch="$1" format="$2"
+  date -r "$epoch" "$format" 2>/dev/null || date -d "@$epoch" "$format" 2>/dev/null || true
+}
+
+mod_basic_statusline() {
+  local model effort used five_hour seven_day five_reset seven_reset
+  model=$(printf '%s' "$INPUT_JSON" | jq -r '.model.display_name // empty')
+  effort=$(printf '%s' "$INPUT_JSON" | jq -r '.effort.level // empty')
+  used=$(printf '%s' "$INPUT_JSON" | jq -r '.context_window.used_percentage // empty')
+  five_hour=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.five_hour.used_percentage // empty')
+  seven_day=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+  five_reset=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.five_hour.resets_at // empty')
+  seven_reset=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.seven_day.resets_at // empty')
+
+  local reset='\033[0m' yellow='\033[33m' dim='\033[2m' sep=' │ '
+  local part_model="" part_ctx part_5h part_7d bg fg pct t dt
+
+  if [ -n "$model" ]; then
+    part_model="$(printf "${yellow}%s${reset}" "$model")"
+    [ -n "$effort" ] && part_model+="$(printf " ${dim}%s${reset}" "$effort")"
+  fi
+
+  if [ -n "$used" ]; then
+    bg=$(basic_bg_color_for "$used")
+    fg=$(basic_fg_color_for "$used")
+    pct=$(printf "%.0f" "$used")
+    part_ctx="$(printf "ctx %s ${fg}%s%%${reset}" "$(basic_make_bar "$used" "$bg" "$fg")" "$pct")"
+  else
+    part_ctx="$(printf "ctx %s ${dim}--${reset}" "$(basic_make_empty_bar)")"
+  fi
+
+  if [ -n "$five_hour" ]; then
+    bg=$(basic_bg_color_for "$five_hour")
+    fg=$(basic_fg_color_for "$five_hour")
+    pct=$(printf "%.0f" "$five_hour")
+    part_5h="$(printf "5h %s ${fg}%s%%${reset}" "$(basic_make_bar "$five_hour" "$bg" "$fg")" "$pct")"
+    if [ -n "$five_reset" ]; then
+      t=$(basic_format_time "$five_reset" "+%H:%M")
+      [ -n "$t" ] && part_5h+="$(printf " ${dim}%s${reset}" "$t")"
+    fi
+  else
+    part_5h="$(printf "5h %s ${dim}--${reset}" "$(basic_make_empty_bar)")"
+  fi
+
+  if [ -n "$seven_day" ]; then
+    bg=$(basic_bg_color_for "$seven_day")
+    fg=$(basic_fg_color_for "$seven_day")
+    pct=$(printf "%.0f" "$seven_day")
+    part_7d="$(printf "7d %s ${fg}%s%%${reset}" "$(basic_make_bar "$seven_day" "$bg" "$fg")" "$pct")"
+    if [ -n "$seven_reset" ]; then
+      dt=$(basic_format_time "$seven_reset" "+%b %d %H:%M")
+      [ -n "$dt" ] && part_7d+="$(printf " ${dim}%s${reset}" "$dt")"
+    fi
+  else
+    part_7d="$(printf "7d %s ${dim}--${reset}" "$(basic_make_empty_bar)")"
+  fi
+
+  local parts=("$part_model" "$part_ctx" "$part_5h" "$part_7d")
+  local out="" i
+  for i in "${!parts[@]}"; do
+    [ -z "${parts[$i]}" ] && continue
+    [ -n "$out" ] && out+="$sep"
+    out+="${parts[$i]}"
+  done
+
+  printf '%s' "$out"
+}
+
 mod_directory() {
   local dir tilde truncate
   dir=$(printf '%s' "$INPUT_JSON" | jq -r '.workspace.current_dir // .cwd // empty')

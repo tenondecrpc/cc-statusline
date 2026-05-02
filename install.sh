@@ -9,7 +9,7 @@
 
 set -uo pipefail
 
-REPO_URL="${CSL_REPO_URL:-https://github.com/<owner>/claude-statusline}"
+REPO_URL="${CSL_REPO_URL:-https://github.com/tenondecrpc/claude-statusline}"
 INSTALL_DIR="${CSL_INSTALL_DIR:-$HOME/.local/share/claude-statusline}"
 CONFIG_DIR="${CSL_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/claude-statusline}"
 CONFIG_FILE="$CONFIG_DIR/config.json"

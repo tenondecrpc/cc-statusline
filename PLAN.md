@@ -11,7 +11,7 @@ Apuntamos al hueco que dejan los 4 proyectos analizados (ver tabla en
 `README.md` / mensaje del autor):
 
 - Más configurable que `nilbuild/claude-statusline` (que es "personal use").
-- Más liviano y simple que `sirmalloc/ccstatusline` (sin TUI, sin Node en cada render).
+- Más liviano y simple que `sirmalloc/ccstatusline` en el render path (sin Node en cada render; la TUI futura corre solo para configurar).
 - Más fácil de instalar que `felipeelias/claude-statusline` (sin compilar Go ni brew obligatorio).
 - Con valores por defecto y presets, a diferencia del approach DIY de los docs oficiales.
 
@@ -24,7 +24,7 @@ Apuntamos al hueco que dejan los 4 proyectos analizados (ver tabla en
 1. **Zero-config first.** Después de instalar, funciona con datos útiles sin tocar nada.
 2. **Un solo comando para instalar.** `curl | bash` (o `npx`) y listo.
 3. **Sin runtime pesado.** El script de render es Bash + `jq`. Nada de levantar Node/Go en cada update (el statusline corre potencialmente cada pocos segundos).
-4. **Configuración como archivo, no como TUI.** JSON simple en `~/.config/claude-statusline/config.json` — versionable, copiable entre máquinas, editable en cualquier editor.
+4. **TUI por defecto, archivo siempre editable.** Cuando exista la TUI, será el flujo recomendado para configurar presets, módulos y colores. Aun así, siempre debe crear y persistir `~/.config/claude-statusline/config.json` como fuente de verdad versionable, copiable entre máquinas y editable manualmente después.
 5. **Multi-línea de fábrica.** Es una de las features más útiles de Claude Code y la mitad de los competidores no la soportan.
 6. **Instalación segura e idempotente.** Backup de `settings.json`, merge con `jq`, uninstall que restaura.
 7. **Progresivo:** preset → tweaks de módulos → módulos custom (comando shell).
@@ -51,7 +51,7 @@ Apuntamos al hueco que dejan los 4 proyectos analizados (ver tabla en
 ### Comando principal
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<owner>/claude-statusline/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tenondecrpc/claude-statusline/main/install.sh | bash
 ```
 
 Equivalentes:
@@ -111,7 +111,7 @@ What do you want to do?
 
 ```bash
 #!/usr/bin/env bash
-# claude-statusline:vX.Y.Z https://github.com/<owner>/claude-statusline
+# claude-statusline:vX.Y.Z https://github.com/tenondecrpc/claude-statusline
 ```
 
 Esto hace que la detección del caso B sea robusta incluso si el usuario movió el script a otra ruta.
@@ -282,12 +282,13 @@ claude-statusline/
 - [ ] Wrapper `npx @<scope>/claude-statusline` para Windows/cross-platform.
 - [ ] Port a PowerShell para Windows nativo.
 - [ ] Theme builder: comando que genera un preset interactivo.
+- [ ] TUI tipo `ccstatusline` como flujo de configuración por defecto para presets, módulos, colores y preview; la decisión UX para usuarios no técnicos es **editar archivo < clicar menúes**, pero la TUI debe crear y guardar todo en `config.json` para permitir edición manual posterior.
 
 ---
 
 ## 11. No-objetivos (lo que **no** vamos a hacer)
 
-- TUI tipo ccstatusline (la decisión es *editar archivo > clicar menúes*).
+- TUI en el path de render, daemon residente, o configuración opaca que no pueda editarse a mano. La TUI puede ser el flujo por defecto, pero debe correr fuera del render y persistir todo en `config.json`.
 - Reimplementar tracking de tokens (usamos lo que Claude Code mete en stdin).
 - Soportar features que requieran levantar un daemon o servidor.
 - Telemetría / analytics de cualquier tipo.

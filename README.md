@@ -6,15 +6,15 @@ Bash + `jq`. No runtime to install. No TUI to learn. One-command install with sa
 Default after first install:
 
 ```
-Opus 4.7 xhigh | ctx █████░░░░░ 58% | 5h ███████░░░ 76% 22:00 | 7d ██░░░░░░░░ 29% May 06 02:00
+Opus xhigh │ ctx        ⣿⣿⣿⣿⣿ 58% │ 5h          ⣿⣿ 76% 22:00 │ 7d    ⣿⣿⣿⣿⣿⣿⣿⣿ 29% May 06 02:00
 ```
 
-Model + version + effort, context bar with %, and rate-limit bars with reset times — all colored by threshold.
+Model + effort, context bar with %, and rate-limit bars with reset times. The basic install matches `statusline-command.sh`: 12-cell bars, `│` separators, yellow model text, dim effort/reset text, and green/yellow/red thresholds.
 
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/<owner>/claude-statusline/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tenondecrpc/claude-statusline/main/install.sh | bash
 ```
 
 The installer:
@@ -40,7 +40,7 @@ Available presets:
 | Preset | Layout |
 |---|---|
 | `minimal` | one line: `model · directory · git` |
-| `default` | one line: `model+version+effort | ctx-bar | 5h-bar+reset | 7d-bar+reset` |
+| `default` | one line matching the basic `statusline-command.sh` format |
 | `developer` | two lines: identity row + metrics row with bars, cost, timer |
 
 Override any module while keeping a preset:
@@ -69,12 +69,13 @@ Or define your own layout:
 }
 ```
 
-Each `lines` entry becomes a row. Modules return empty when their data is absent (e.g. `rate_limit` outside Pro/Max, `worktree` outside a worktree session) so they don't leave dangling separators.
+Each `lines` entry becomes a row. Most modules return empty when their data is absent (e.g. `rate_limit` outside Pro/Max, `worktree` outside a worktree session) so they don't leave dangling separators. The default `basic_statusline` module intentionally shows empty 5h/7d bars when rate-limit data is absent, matching the basic install script.
 
 ## Modules
 
 | Name | Shows |
 |---|---|
+| `basic_statusline` | one-piece default line matching `statusline-command.sh`: model, effort, ctx, 5h, 7d |
 | `model` | display name; with `with_version`/`with_effort` becomes `Opus 4.7 xhigh` |
 | `effort` | reasoning effort level alone (`low`/`medium`/`high`/`xhigh`/`max`) |
 | `directory` | current dir (tilde-collapsed, truncated) |
