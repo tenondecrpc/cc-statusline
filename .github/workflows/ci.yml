@@ -7,19 +7,21 @@ on:
 
 jobs:
   smoke:
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install jq (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y jq
+        run: command -v jq >/dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y jq; }
       - name: Install jq (macOS)
         if: runner.os == 'macOS'
-        run: brew install jq
+        run: command -v jq >/dev/null 2>&1 || brew install jq
       - name: Smoke tests
         run: bash tests/test.sh
       - name: Sandboxed install
