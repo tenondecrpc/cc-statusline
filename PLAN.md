@@ -51,7 +51,7 @@ We are targeting the gap left by the 4 projects analyzed (see the table in
 | macOS | Currently supported | Main installation path through `curl | bash`; Homebrew tap on the roadmap. |
 | Linux | Currently supported | Main installation path through `curl | bash`; `jq` through `apt`, `dnf`, or `pacman`. |
 | Windows (WSL) | Planned | Document WSL as the recommended path for Windows users before native support. |
-| Native Windows | Planned | Cross-platform `npx` wrapper and PowerShell port in v0.4+. |
+| Native Windows | Planned | Cross-platform `npx` wrapper and PowerShell port in v0.4.0+. |
 
 ---
 
@@ -266,28 +266,28 @@ claude-statusline/
 
 ## 10. Roadmap
 
-### v0.1 - MVP
-- [ ] `statusline.sh` + modules: `model`, `directory`, `git`, `context_bar`, `cost`, `rate_limit`.
-- [ ] Multiline support.
-- [ ] Presets `minimal`, `default`, `developer`.
-- [ ] `install.sh` with backup and `jq` merge.
-- [ ] `uninstall.sh` with restore.
-- [ ] README with screenshot + preset table.
-- [ ] CI with snapshot tests.
+### v0.1.0 - MVP
+- [x] `statusline.sh` + modules: `model`, `directory`, `git`, `context_bar`, `cost`, `rate_limit`.
+- [x] Multiline support.
+- [x] Presets `minimal`, `default`, `developer`.
+- [x] `install.sh` with backup and `jq` merge.
+- [x] `uninstall.sh` with restore.
+- [x] README with screenshot + preset table.
+- [x] CI with smoke/regression tests.
 
-### v0.2 - UX And Polish
+### v0.2.0 - UX And Polish
 - [ ] `powerline` preset with Nerd Font detection + fallback.
 - [ ] OSC 8 (clickable branches and dirs).
 - [ ] Modules `worktree`, `vim_mode`, `session_timer`, `lines_changed`.
 - [ ] Subcommands: `claude-statusline test` (mock data) and `claude-statusline themes`.
 - [ ] Homebrew tap.
 
-### v0.3 - Extensibility
+### v0.3.0 - Extensibility
 - [ ] `custom` module with timeout and caching.
 - [ ] Plugin folder: `~/.config/claude-statusline/modules/<name>.sh`.
 - [ ] Smart truncation when the terminal is narrow.
 
-### v0.4+
+### v0.4.0+
 - [ ] Wrapper `npx @<scope>/claude-statusline` for Windows/cross-platform.
 - [ ] PowerShell port for native Windows.
 - [ ] Theme builder: command that generates an interactive preset.
@@ -301,7 +301,7 @@ claude-statusline/
 - Reimplement token tracking. We use what Claude Code sends through stdin.
 - Support features that require starting a daemon or server.
 - Telemetry / analytics of any kind.
-- Official pre-1.0 support for terminals without ANSI (Windows cmd.exe without ANSI).
+- Official pre-v1.0.0 support for terminals without ANSI (Windows cmd.exe without ANSI).
 
 ---
 
