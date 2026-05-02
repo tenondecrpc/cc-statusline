@@ -11,6 +11,12 @@ Opus xhigh │ ctx        ⣿⣿⣿⣿⣿ 58% │ 5h          ⣿⣿ 76% 22:00 �
 
 Model + effort, context bar with %, and rate-limit bars with reset times. The basic install matches `statusline-command.sh`: 12-cell bars, `│` separators, yellow model text, dim effort/reset text, and green/yellow/red thresholds.
 
+## Platform support
+
+Current support: macOS and Linux.
+
+Windows support is on the roadmap. For now, use WSL on Windows.
+
 ## Install
 
 ```bash

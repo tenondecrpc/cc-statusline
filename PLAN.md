@@ -44,6 +44,15 @@ Apuntamos al hueco que dejan los 4 proyectos analizados (ver tabla en
 
 **Dependencias del usuario:** `bash`, `jq`. El instalador detecta y ofrece instalarlas (`brew`, `apt`, `dnf`, `pacman`).
 
+### 3.1 Soporte por plataforma
+
+| Plataforma | Estado | Notas |
+|---|---|---|
+| macOS | Soportado actualmente | Instalación principal vía `curl | bash`; Homebrew tap en roadmap. |
+| Linux | Soportado actualmente | Instalación principal vía `curl | bash`; `jq` vía `apt`, `dnf` o `pacman`. |
+| Windows (WSL) | Planeado | Documentar WSL como el camino recomendado para usuarios Windows antes del soporte nativo. |
+| Windows nativo | Planeado | Wrapper `npx` cross-platform y port a PowerShell en v0.4+. |
+
 ---
 
 ## 4. Distribución e instalación
