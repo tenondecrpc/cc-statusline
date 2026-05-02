@@ -1,80 +1,80 @@
-# PLAN — claude-statusline
+# PLAN - claude-statusline
 
-Statusline para Claude Code que cualquier dev pueda instalar **en un comando**,
-usar **sin configurar**, y personalizar **editando un archivo**.
-
----
-
-## 1. Objetivo y diferenciación
-
-Apuntamos al hueco que dejan los 4 proyectos analizados (ver tabla en
-`README.md` / mensaje del autor):
-
-- Más configurable que `nilbuild/claude-statusline` (que es "personal use").
-- Más liviano y simple que `sirmalloc/ccstatusline` en el render path (sin Node en cada render; la TUI futura corre solo para configurar).
-- Más fácil de instalar que `felipeelias/claude-statusline` (sin compilar Go ni brew obligatorio).
-- Con valores por defecto y presets, a diferencia del approach DIY de los docs oficiales.
-
-**Slogan interno:** *"git clone → un comando → ya tenés statusline. Editá un JSON si querés más."*
+A Claude Code statusline that any developer can install with **one command**,
+use with **no configuration**, and customize by **editing a file**.
 
 ---
 
-## 2. Principios de diseño
+## 1. Goal And Differentiation
 
-1. **Zero-config first.** Después de instalar, funciona con datos útiles sin tocar nada.
-2. **Un solo comando para instalar.** `curl | bash` (o `npx`) y listo.
-3. **Sin runtime pesado.** El script de render es Bash + `jq`. Nada de levantar Node/Go en cada update (el statusline corre potencialmente cada pocos segundos).
-4. **TUI por defecto, archivo siempre editable.** Cuando exista la TUI, será el flujo recomendado para configurar presets, módulos y colores. Aun así, siempre debe crear y persistir `~/.config/claude-statusline/config.json` como fuente de verdad versionable, copiable entre máquinas y editable manualmente después.
-5. **Multi-línea de fábrica.** Es una de las features más útiles de Claude Code y la mitad de los competidores no la soportan.
-6. **Instalación segura e idempotente.** Backup de `settings.json`, merge con `jq`, uninstall que restaura.
-7. **Progresivo:** preset → tweaks de módulos → módulos custom (comando shell).
+We are targeting the gap left by the 4 projects analyzed (see the table in
+`README.md` / the author's message):
+
+- More configurable than `nilbuild/claude-statusline`, which is for "personal use".
+- Lighter and simpler than `sirmalloc/ccstatusline` in the render path, with no Node process on every render. The future TUI runs only for configuration.
+- Easier to install than `felipeelias/claude-statusline`, with no Go compilation and no mandatory Homebrew.
+- Includes defaults and presets, unlike the DIY approach in the official docs.
+
+**Internal slogan:** *"git clone -> one command -> you have a statusline. Edit JSON if you want more."*
 
 ---
 
-## 3. Stack técnico
+## 2. Design Principles
 
-| Decisión | Elección | Razón |
+1. **Zero-config first.** After installation, it works with useful data without touching anything.
+2. **One command to install.** `curl | bash` (or `npx`) and done.
+3. **No heavy runtime.** The render script is Bash + `jq`. No Node/Go startup on every update, since the statusline may run every few seconds.
+4. **TUI by default, file always editable.** When the TUI exists, it will be the recommended flow for configuring presets, modules, and colors. Even then, it must always create and persist `~/.config/claude-statusline/config.json` as a versionable source of truth that can be copied across machines and edited manually later.
+5. **Multiline out of the box.** This is one of Claude Code's most useful features, and half of the competitors do not support it.
+6. **Safe and idempotent installation.** Back up `settings.json`, merge with `jq`, and provide an uninstall flow that restores.
+7. **Progressive customization:** preset -> module tweaks -> custom modules (shell command).
+
+---
+
+## 3. Technical Stack
+
+| Decision | Choice | Reason |
 |---|---|---|
-| Lenguaje del script | **Bash** (POSIX donde se pueda) | Sin runtime extra, ubicuo, arranque inmediato. |
-| Parser de input JSON | **`jq`** | Único dep externo, ya estándar entre devs. |
-| Formato de config | **JSON** | `jq` ya está como dep → cero parsers nuevos. Familiar para devs. |
-| Distribución | **`curl \| bash` + Homebrew tap + npx wrapper opcional** | Cubre macOS, Linux y Windows (WSL). |
-| Modificación de `settings.json` | **`jq` con `--argjson` + escritura atómica** | Merge seguro sin pisar otras keys. |
-| Detección de capacidades de color | `$COLORTERM`, `$TERM`, `$NO_COLOR` | Estándar. |
+| Script language | **Bash** (POSIX where possible) | No extra runtime, ubiquitous, immediate startup. |
+| Input JSON parser | **`jq`** | Only external dependency, already standard among developers. |
+| Config format | **JSON** | `jq` is already a dependency, so there are no new parsers. Familiar for developers. |
+| Distribution | **`curl \| bash` + Homebrew tap + optional npx wrapper** | Covers macOS, Linux, and Windows (WSL). |
+| `settings.json` modification | **`jq` with `--argjson` + atomic write** | Safe merge without overwriting unrelated keys. |
+| Color capability detection | `$COLORTERM`, `$TERM`, `$NO_COLOR` | Standard. |
 
-**Dependencias del usuario:** `bash`, `jq`. El instalador detecta y ofrece instalarlas (`brew`, `apt`, `dnf`, `pacman`).
+**User dependencies:** `bash`, `jq`. The installer detects them and offers installation guidance (`brew`, `apt`, `dnf`, `pacman`).
 
-### 3.1 Soporte por plataforma
+### 3.1 Platform Support
 
-| Plataforma | Estado | Notas |
+| Platform | Status | Notes |
 |---|---|---|
-| macOS | Soportado actualmente | Instalación principal vía `curl | bash`; Homebrew tap en roadmap. |
-| Linux | Soportado actualmente | Instalación principal vía `curl | bash`; `jq` vía `apt`, `dnf` o `pacman`. |
-| Windows (WSL) | Planeado | Documentar WSL como el camino recomendado para usuarios Windows antes del soporte nativo. |
-| Windows nativo | Planeado | Wrapper `npx` cross-platform y port a PowerShell en v0.4+. |
+| macOS | Currently supported | Main installation path through `curl | bash`; Homebrew tap on the roadmap. |
+| Linux | Currently supported | Main installation path through `curl | bash`; `jq` through `apt`, `dnf`, or `pacman`. |
+| Windows (WSL) | Planned | Document WSL as the recommended path for Windows users before native support. |
+| Native Windows | Planned | Cross-platform `npx` wrapper and PowerShell port in v0.4+. |
 
 ---
 
-## 4. Distribución e instalación
+## 4. Distribution And Installation
 
-### Comando principal
+### Main Command
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/tenondecrpc/claude-statusline/main/install.sh | bash
 ```
 
-Equivalentes:
-- `brew install <tap>/claude-statusline` (futuro)
-- `npx @<scope>/claude-statusline install` (wrapper liviano)
+Equivalents:
+- `brew install <tap>/claude-statusline` (future)
+- `npx @<scope>/claude-statusline install` (lightweight wrapper)
 
-### Flujo del instalador (`install.sh`)
+### Installer Flow (`install.sh`)
 
-1. Detectar `jq`. Si falta → ofrecer instalarlo (`brew`/`apt`/`dnf`) o abortar con instrucciones claras.
-2. Crear `~/.local/share/claude-statusline/` y copiar `statusline.sh` + `lib/`.
-3. Crear `~/.config/claude-statusline/config.json` **solo si no existe** (default preset).
-4. **Detectar statusline pre-existente** en `~/.claude/settings.json` (ver §4.1).
-5. Backup de `~/.claude/settings.json` → `~/.claude/settings.json.bak.<timestamp>`.
-6. Merge con `jq` solo si el usuario lo confirma (o ya estaba seteado por nosotros):
+1. Detect `jq`. If it is missing, offer to install it (`brew`/`apt`/`dnf`) or abort with clear instructions.
+2. Create `~/.local/share/claude-statusline/` and copy `statusline.sh` + `lib/`.
+3. Create `~/.config/claude-statusline/config.json` **only if it does not exist** (default preset).
+4. **Detect any pre-existing statusline** in `~/.claude/settings.json` (see section 4.1).
+5. Back up `~/.claude/settings.json` to `~/.claude/settings.json.bak.<timestamp>`.
+6. Merge with `jq` only if the user confirms it (or if it was already set by us):
    ```bash
    jq '.statusLine = {
      "type": "command",
@@ -82,25 +82,25 @@ Equivalentes:
      "padding": 1
    }' settings.json > settings.json.tmp && mv settings.json.tmp settings.json
    ```
-7. Imprimir resumen: dónde quedó la config, cómo cambiar de preset, cómo desinstalar.
+7. Print a summary: where the config is, how to change the preset, and how to uninstall.
 
-### 4.1 Manejo de un `statusLine` ya configurado
+### 4.1 Handling An Existing `statusLine`
 
-Antes de tocar `~/.claude/settings.json`, el instalador clasifica el estado actual y actúa distinto según el caso:
+Before touching `~/.claude/settings.json`, the installer classifies the current state and behaves differently for each case:
 
-| Caso | Cómo se detecta | Acción por defecto |
+| Case | How it is detected | Default action |
 |---|---|---|
-| **A. No hay `statusLine`** | `jq -e '.statusLine' settings.json` falla | Instalación limpia, sin prompts. |
-| **B. Es nuestro** (reinstalación / upgrade) | El `command` apunta a `~/.local/share/claude-statusline/statusline.sh` **o** el script tiene el marker `# claude-statusline:vX.Y.Z` | Idempotente: actualiza el script, deja `config.json` intacto, no muta `settings.json` salvo cambio de path. Sin prompts. |
-| **C. Es de otro proyecto conocido** | Match por path/comando: `npx ccstatusline*`, `claude-statusline prompt` (felipeelias), `~/.claude/statusline.sh` con header de nilbuild | Prompt interactivo: **Replace / Keep / Cancel**. Mostrar de qué herramienta viene (`"Detected: ccstatusline"`). |
-| **D. Es un script custom del usuario** | Cualquier otro `command` | Prompt interactivo más cauto: imprime el `command` actual y los primeros 3 lines del script si es un archivo. **Replace / Keep / Cancel**, default = `Cancel`. |
-| **E. `settings.json` no existe o está vacío** | archivo ausente | Crear `~/.claude/settings.json` mínimo con solo `statusLine`. |
+| **A. No `statusLine`** | `jq -e '.statusLine' settings.json` fails | Clean installation, no prompts. |
+| **B. It is ours** (reinstall / upgrade) | The `command` points to `~/.local/share/claude-statusline/statusline.sh` **or** the script has the marker `# claude-statusline:vX.Y.Z` | Idempotent: update the script, leave `config.json` intact, and do not mutate `settings.json` unless the path changed. No prompts. |
+| **C. It belongs to another known project** | Match by path/command: `npx ccstatusline*`, `claude-statusline prompt` (felipeelias), `~/.claude/statusline.sh` with a nilbuild header | Interactive prompt: **Replace / Keep / Cancel**. Show which tool it came from (`"Detected: ccstatusline"`). |
+| **D. It is a custom user script** | Any other `command` | More cautious interactive prompt: print the current `command` and the first 3 lines of the script if it is a file. **Replace / Keep / Cancel**, default = `Cancel`. |
+| **E. `settings.json` does not exist or is empty** | Missing file | Create a minimal `~/.claude/settings.json` with only `statusLine`. |
 
-**Prompt unificado (casos C y D):**
+**Unified prompt (cases C and D):**
 
-```
+```text
 Detected an existing statusLine in ~/.claude/settings.json:
-  command: <comando actual>
+  command: <current command>
   source : <ccstatusline | felipeelias | nilbuild | custom script | inline>
 
 What do you want to do?
@@ -111,44 +111,44 @@ What do you want to do?
 > 
 ```
 
-**Backup en todos los casos C/D:**
+**Backup in all C/D cases:**
 
-- `~/.claude/settings.json` → `~/.claude/settings.json.bak.<timestamp>`
-- Si el `command` apunta a un script local (ej. `~/.claude/statusline.sh`), también copiamos ese archivo a `~/.claude/statusline.sh.bak.<timestamp>` antes de cualquier cambio. Si el `command` es inline, lo guardamos como `~/.claude/statusline.previous.<timestamp>.txt` para poder mostrarlo en el uninstall.
+- `~/.claude/settings.json` -> `~/.claude/settings.json.bak.<timestamp>`
+- If the `command` points to a local script, such as `~/.claude/statusline.sh`, also copy that file to `~/.claude/statusline.sh.bak.<timestamp>` before any change. If the `command` is inline, save it as `~/.claude/statusline.previous.<timestamp>.txt` so the uninstall flow can show it.
 
-**Marker de identificación.** Nuestro `statusline.sh` lleva siempre como segunda línea:
+**Identification marker.** Our `statusline.sh` always carries this as its second line:
 
 ```bash
 #!/usr/bin/env bash
 # claude-statusline:vX.Y.Z https://github.com/tenondecrpc/claude-statusline
 ```
 
-Esto hace que la detección del caso B sea robusta incluso si el usuario movió el script a otra ruta.
+This makes case B detection robust even if the user moved the script to another path.
 
-**Project-level override.** Si existe `<cwd>/.claude/settings.json` con un `statusLine` distinto, **no lo tocamos** y avisamos: *"Project-level statusLine in `./.claude/settings.json` will override the user-level one. Edit that file if you want claude-statusline to apply here."*
+**Project-level override.** If `<cwd>/.claude/settings.json` exists with a different `statusLine`, **we do not touch it** and we warn: *"Project-level statusLine in `./.claude/settings.json` will override the user-level one. Edit that file if you want claude-statusline to apply here."*
 
-**Flags no interactivos** (para CI / dotfiles):
+**Non-interactive flags** (for CI / dotfiles):
 
-| Flag | Efecto |
+| Flag | Effect |
 |---|---|
-| `--force` | Reemplaza siempre, sin prompt. Sigue haciendo backup. |
-| `--keep-existing` | Si ya hay un `statusLine`, instala los archivos pero no toca `settings.json`. Sale con código 0. |
-| `--abort-if-exists` | Si ya hay un `statusLine` (caso C o D), sale con código no-cero sin tocar nada. |
-| `--dry-run` | Imprime el plan (qué iría a `settings.json`, qué backup haría) sin escribir. |
+| `--force` | Always replace, without prompting. Still creates a backup. |
+| `--keep-existing` | If a `statusLine` already exists, install the files but do not touch `settings.json`. Exit with code 0. |
+| `--abort-if-exists` | If a `statusLine` already exists (case C or D), exit with a non-zero code without touching anything. |
+| `--dry-run` | Print the plan, including what would go into `settings.json` and which backup would be created, without writing. |
 
-Default sin flags: prompt interactivo en C/D, idempotente en B, limpio en A/E.
+Default with no flags: interactive prompt in C/D, idempotent in B, clean in A/E.
 
-### Flujo del desinstalador (`uninstall.sh`)
+### Uninstaller Flow (`uninstall.sh`)
 
-1. Si hay `.bak` de `settings.json` → restaurar el más reciente (preserva el statusline previo, sea de quien sea).
-2. Si no, quitar la key `statusLine` con `jq 'del(.statusLine)'`.
-3. Si existe `~/.claude/statusline.sh.bak.<timestamp>` → ofrecer restaurarlo a `~/.claude/statusline.sh`.
-4. Borrar `~/.local/share/claude-statusline/` (preguntar antes de borrar `~/.config/claude-statusline/config.json`).
-5. Flags: `--purge` (borra config sin preguntar), `--keep-backups` (no borra los `.bak`).
+1. If there is a `.bak` for `settings.json`, restore the most recent one, preserving the previous statusline no matter whose it was.
+2. Otherwise, remove the `statusLine` key with `jq 'del(.statusLine)'`.
+3. If `~/.claude/statusline.sh.bak.<timestamp>` exists, offer to restore it to `~/.claude/statusline.sh`.
+4. Delete `~/.local/share/claude-statusline/`, and ask before deleting `~/.config/claude-statusline/config.json`.
+5. Flags: `--purge` (delete config without asking), `--keep-backups` (do not delete `.bak` files).
 
 ---
 
-## 5. Modelo de configuración
+## 5. Configuration Model
 
 `~/.config/claude-statusline/config.json`:
 
@@ -177,149 +177,149 @@ Default sin flags: prompt interactivo en C/D, idempotente en B, limpio en A/E.
 }
 ```
 
-**Reglas:**
-- Si `preset` está seteado, los campos siguientes lo sobrescriben módulo a módulo (estilo Starship/felipeelias).
-- `lines` es una array de arrays → cada subarray es una línea. Una sola línea = `[[...]]`.
-- Si una key no existe, se usa el default del preset cargado.
+**Rules:**
+- If `preset` is set, the following fields override it module by module, in the style of Starship/felipeelias.
+- `lines` is an array of arrays. Each subarray is one line. A single line = `[[...]]`.
+- If a key does not exist, use the default from the loaded preset.
 
 ---
 
-## 6. Módulos (MVP)
+## 6. Modules (MVP)
 
-| Módulo | Datos del JSON de Claude Code | Notas |
+| Module | Claude Code JSON data | Notes |
 |---|---|---|
-| `model` | `model.display_name` | Acepta `short` para acortar. |
-| `directory` | `workspace.current_dir` | Tilde-collapse + trunc. |
-| `git` | (ejecuta `git`) | Branch + counts (staged/unstaged/untracked) + ahead/behind. |
-| `context_bar` | `context_window.used_percentage` | Barra default de N chars + %. |
-| `context_pct` | idem | Solo el %. |
-| `cost` | `cost.total_cost_usd` | Hide-when-zero opcional. |
-| `rate_limit` | `rate_limits.five_hour.*`, `seven_day.*` | Skip si ausente (no-Pro). |
-| `session_timer` | `cost.total_duration_ms` | Formato `1h23m`. |
+| `model` | `model.display_name` | Accepts `short` for abbreviation. |
+| `directory` | `workspace.current_dir` | Tilde collapse + truncation. |
+| `git` | (runs `git`) | Branch + counts (staged/unstaged/untracked) + ahead/behind. |
+| `context_bar` | `context_window.used_percentage` | Default N-character bar + %. |
+| `context_pct` | same | Percentage only. |
+| `cost` | `cost.total_cost_usd` | Optional hide-when-zero behavior. |
+| `rate_limit` | `rate_limits.five_hour.*`, `seven_day.*` | Skip when absent (non-Pro). |
+| `session_timer` | `cost.total_duration_ms` | Format `1h23m`. |
 | `lines_changed` | `cost.total_lines_added/removed` | `+12 -3`. |
-| `vim_mode` | `vim.mode` | Solo si presente. |
-| `worktree` | `worktree.name`/`branch` | Solo si presente. |
-| `agent` | `agent.name` | Solo si presente. |
-| `custom` | shell command | Ejecuta y mete stdout (con timeout). |
+| `vim_mode` | `vim.mode` | Only if present. |
+| `worktree` | `worktree.name`/`branch` | Only if present. |
+| `agent` | `agent.name` | Only if present. |
+| `custom` | shell command | Execute and insert stdout (with timeout). |
 
-Todos los módulos respetan **hide-when-empty** y **timeout** para no colgar el statusline.
+All modules respect **hide-when-empty** and **timeout** so the statusline does not hang.
 
 ---
 
 ## 7. Presets (MVP)
 
-| Preset | Layout | Para quién |
+| Preset | Layout | Audience |
 |---|---|---|
-| `minimal` | una línea: `model · dir · branch` | quien quiere lo mínimo |
-| `default` | una línea: `model | dir | git | context% | cost` | uso general |
-| `developer` | dos líneas: `[model, dir, git]` / `[context_bar, cost, rate_limit]` | trabajo serio |
-| `powerline` | una línea con flechas Powerline (Nerd Font) | con terminal copada |
+| `minimal` | one line: `model . dir . branch` | users who want the minimum |
+| `default` | one line: `model | dir | git | context% | cost` | general use |
+| `developer` | two lines: `[model, dir, git]` / `[context_bar, cost, rate_limit]` | serious work |
+| `powerline` | one line with Powerline arrows (Nerd Font) | users with a polished terminal |
 
-Todos guardados como JSON en `presets/` y embedded en el script.
+All presets are stored as JSON in `presets/` and embedded in the script.
 
 ---
 
-## 8. Estructura del repo
+## 8. Repo Structure
 
-```
+```text
 claude-statusline/
-├── README.md                  # quickstart + screenshot + tabla de presets
-├── PLAN.md                    # este archivo
+├── README.md                  # quickstart + screenshot + preset table
+├── PLAN.md                    # this file
 ├── LICENSE                    # MIT
-├── install.sh                 # instalador one-liner
-├── uninstall.sh               # desinstalador
-├── statusline.sh              # entrypoint: lee stdin, dispatcher
+├── install.sh                 # one-liner installer
+├── uninstall.sh               # uninstaller
+├── statusline.sh              # entrypoint: reads stdin, dispatcher
 ├── lib/
-│   ├── modules.sh             # implementación de cada módulo
-│   ├── git.sh                 # helpers de git
-│   ├── colors.sh              # ANSI + detección de capacidades
-│   ├── render.sh              # ensamblado de líneas, separadores
-│   └── config.sh              # carga y merge de config + preset
+│   ├── modules.sh             # implementation of each module
+│   ├── git.sh                 # git helpers
+│   ├── colors.sh              # ANSI + capability detection
+│   ├── render.sh              # line and separator assembly
+│   └── config.sh              # config + preset loading and merge
 ├── presets/
 │   ├── minimal.json
 │   ├── default.json
 │   ├── developer.json
 │   └── powerline.json
 ├── tests/
-│   ├── fixtures/              # JSONs de muestra (con/sin worktree, sin rate_limits, etc.)
-│   ├── snapshots/             # output esperado (sin ANSI)
+│   ├── fixtures/              # sample JSON files (with/without worktree, no rate_limits, etc.)
+│   ├── snapshots/             # expected output (without ANSI)
 │   └── test.bats              # bats-core
 ├── docs/
 │   ├── modules.md
 │   ├── customizing.md
 │   └── troubleshooting.md
 └── .github/workflows/
-    └── ci.yml                 # macOS + Ubuntu, varias versiones de jq
+    └── ci.yml                 # macOS + Ubuntu, multiple jq versions
 ```
 
 ---
 
 ## 9. Testing
 
-- **Fixtures**: 1 JSON por escenario (`min.json`, `with_worktree.json`, `no_rate_limits.json`, `vim.json`, `cost_high.json`, etc.).
-- **Snapshots**: correr `statusline.sh < fixture.json | strip-ansi > out.txt` y comparar con `expected.txt`.
-- **`bats`** para tests unitarios de funciones de `lib/`.
-- **CI** en macOS y Ubuntu con `jq` 1.6 y 1.7.
-- Test del instalador: copia `settings.json` falso, corre `install.sh` y verifica el merge con `jq`.
+- **Fixtures**: 1 JSON file per scenario (`min.json`, `with_worktree.json`, `no_rate_limits.json`, `vim.json`, `cost_high.json`, etc.).
+- **Snapshots**: run `statusline.sh < fixture.json | strip-ansi > out.txt` and compare with `expected.txt`.
+- **`bats`** for unit tests of `lib/` functions.
+- **CI** on macOS and Ubuntu with `jq` 1.6 and 1.7.
+- Installer test: copy a fake `settings.json`, run `install.sh`, and verify the merge with `jq`.
 
 ---
 
 ## 10. Roadmap
 
-### v0.1 — MVP
-- [ ] `statusline.sh` + módulos: `model`, `directory`, `git`, `context_bar`, `cost`, `rate_limit`.
-- [ ] Multi-línea.
+### v0.1 - MVP
+- [ ] `statusline.sh` + modules: `model`, `directory`, `git`, `context_bar`, `cost`, `rate_limit`.
+- [ ] Multiline support.
 - [ ] Presets `minimal`, `default`, `developer`.
-- [ ] `install.sh` con backup y merge con `jq`.
-- [ ] `uninstall.sh` con restore.
-- [ ] README con screenshot + tabla de presets.
-- [ ] CI con tests de snapshot.
+- [ ] `install.sh` with backup and `jq` merge.
+- [ ] `uninstall.sh` with restore.
+- [ ] README with screenshot + preset table.
+- [ ] CI with snapshot tests.
 
-### v0.2 — UX y polish
-- [ ] Preset `powerline` con detección de Nerd Font + fallback.
-- [ ] OSC 8 (branches y dirs clickeables).
-- [ ] Módulos `worktree`, `vim_mode`, `session_timer`, `lines_changed`.
-- [ ] Subcomandos: `claude-statusline test` (mock data) y `claude-statusline themes`.
+### v0.2 - UX And Polish
+- [ ] `powerline` preset with Nerd Font detection + fallback.
+- [ ] OSC 8 (clickable branches and dirs).
+- [ ] Modules `worktree`, `vim_mode`, `session_timer`, `lines_changed`.
+- [ ] Subcommands: `claude-statusline test` (mock data) and `claude-statusline themes`.
 - [ ] Homebrew tap.
 
-### v0.3 — Extensibilidad
-- [ ] Módulo `custom` con timeout y caching.
+### v0.3 - Extensibility
+- [ ] `custom` module with timeout and caching.
 - [ ] Plugin folder: `~/.config/claude-statusline/modules/<name>.sh`.
-- [ ] Truncado inteligente cuando la terminal es angosta.
+- [ ] Smart truncation when the terminal is narrow.
 
 ### v0.4+
-- [ ] Wrapper `npx @<scope>/claude-statusline` para Windows/cross-platform.
-- [ ] Port a PowerShell para Windows nativo.
-- [ ] Theme builder: comando que genera un preset interactivo.
-- [ ] TUI tipo `ccstatusline` como flujo de configuración por defecto para presets, módulos, colores y preview; la decisión UX para usuarios no técnicos es **editar archivo < clicar menúes**, pero la TUI debe crear y guardar todo en `config.json` para permitir edición manual posterior.
+- [ ] Wrapper `npx @<scope>/claude-statusline` for Windows/cross-platform.
+- [ ] PowerShell port for native Windows.
+- [ ] Theme builder: command that generates an interactive preset.
+- [ ] `ccstatusline`-style TUI as the default configuration flow for presets, modules, colors, and preview. The UX decision for non-technical users is **editing a file < clicking menus**, but the TUI must create and save everything in `config.json` to allow later manual editing.
 
 ---
 
-## 11. No-objetivos (lo que **no** vamos a hacer)
+## 11. Non-Goals (What We **Will Not** Do)
 
-- TUI en el path de render, daemon residente, o configuración opaca que no pueda editarse a mano. La TUI puede ser el flujo por defecto, pero debe correr fuera del render y persistir todo en `config.json`.
-- Reimplementar tracking de tokens (usamos lo que Claude Code mete en stdin).
-- Soportar features que requieran levantar un daemon o servidor.
-- Telemetría / analytics de cualquier tipo.
-- Soporte oficial pre-1.0 para terminales sin ANSI (Windows cmd.exe sin ANSI).
+- TUI in the render path, resident daemon, or opaque configuration that cannot be edited manually. The TUI can be the default flow, but it must run outside rendering and persist everything in `config.json`.
+- Reimplement token tracking. We use what Claude Code sends through stdin.
+- Support features that require starting a daemon or server.
+- Telemetry / analytics of any kind.
+- Official pre-1.0 support for terminals without ANSI (Windows cmd.exe without ANSI).
 
 ---
 
-## 12. Riesgos y mitigaciones
+## 12. Risks And Mitigations
 
-| Riesgo | Mitigación |
+| Risk | Mitigation |
 |---|---|
-| `jq` no instalado | Detección + instrucciones por SO en el instalador. |
-| `settings.json` ya tiene un `statusLine` distinto | Backup con timestamp antes de tocar. |
-| Render lento por `git status` en repos grandes | Cache por proceso + flags livianas (`git status --porcelain=v1 -uno` por defecto). |
-| Cambia el JSON de Claude Code | Tests con fixtures fijos + manejo de campos ausentes con `// empty`. |
-| Devs en Windows | Documentar WSL como path principal; PowerShell port en roadmap. |
+| `jq` is not installed | Detection + OS-specific instructions in the installer. |
+| `settings.json` already has a different `statusLine` | Timestamped backup before touching it. |
+| Slow render from `git status` in large repos | Per-process cache + lightweight flags (`git status --porcelain=v1 -uno` by default). |
+| Claude Code JSON changes | Tests with fixed fixtures + missing-field handling with `// empty`. |
+| Developers on Windows | Document WSL as the main path; PowerShell port on the roadmap. |
 
 ---
 
-## 13. Métricas de éxito
+## 13. Success Metrics
 
-- Instalar desde cero a statusline visible en **< 30 segundos**.
-- Cambiar a otro preset en **< 10 segundos** (editar un campo).
-- Tiempo de render del statusline **< 50 ms** en repos típicos.
-- README leído de arriba a abajo por un dev nuevo en **< 3 minutos** y que ya sepa cómo personalizar.
+- Install from scratch to visible statusline in **< 30 seconds**.
+- Switch to another preset in **< 10 seconds** by editing one field.
+- Statusline render time **< 50 ms** in typical repos.
+- A new developer can read the README top to bottom in **< 3 minutes** and know how to customize.
