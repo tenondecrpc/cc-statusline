@@ -166,10 +166,22 @@ curl -fsSL https://raw.githubusercontent.com/tenondecrpc/claude-statusline/main/
 | `--dry-run` | print the intended actions; write nothing |
 | `--non-interactive` | fail closed when a prompt would be needed |
 
+## Update
+
+```bash
+claude-statusline update
+```
+
+Downloads the latest `install.sh` from the repository and re-runs it with `--force`. Your config file (`~/.config/claude-statusline/config.json`) is never overwritten during an update.
+
+```bash
+claude-statusline version   # show installed version
+```
+
 ## Uninstall
 
 ```bash
-~/.local/share/claude-statusline/uninstall.sh
+claude-statusline uninstall
 ```
 
 Restores the latest backup of `~/.claude/settings.json` (so the previous statusline, ours or anyone else's, comes back), removes the install dir, and keeps your config (use `--purge` to wipe it).

@@ -15,6 +15,7 @@ INSTALL_DIR="${CSL_INSTALL_DIR:-$HOME/.local/share/claude-statusline}"
 CONFIG_DIR="${CSL_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/claude-statusline}"
 CONFIG_FILE="$CONFIG_DIR/config.json"
 SETTINGS_FILE="${CSL_SETTINGS_FILE:-$HOME/.claude/settings.json}"
+WRAPPER_DIR="${CSL_WRAPPER_DIR:-$HOME/.local/bin}"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 
 FORCE=0
@@ -107,8 +108,89 @@ copy_files() {
     cp "$SOURCE_DIR/uninstall.sh" "$INSTALL_DIR/"
     chmod +x "$INSTALL_DIR/uninstall.sh"
   fi
+  if [ -f "$SOURCE_DIR/VERSION" ]; then
+    cp "$SOURCE_DIR/VERSION" "$INSTALL_DIR/"
+  fi
   chmod +x "$INSTALL_DIR/statusline.sh"
   ok "Installed files → $INSTALL_DIR"
+}
+
+install_cli_wrapper() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    info "DRY RUN: would install CLI wrapper to $WRAPPER_DIR/claude-statusline"
+    return
+  fi
+  mkdir -p "$WRAPPER_DIR"
+  cat > "$WRAPPER_DIR/claude-statusline" <<'WRAPPER_EOF'
+#!/usr/bin/env bash
+# claude-statusline CLI wrapper - managed by install.sh, do not edit directly
+
+INSTALL_DIR="${CSL_INSTALL_DIR:-$HOME/.local/share/claude-statusline}"
+REPO_URL="${CSL_REPO_URL:-https://github.com/tenondecrpc/claude-statusline}"
+
+info() { printf '\033[36m▸\033[0m %s\n' "$*"; }
+ok()   { printf '\033[32m✓\033[0m %s\n' "$*"; }
+err()  { printf '\033[31m✗\033[0m %s\n' "$*" >&2; }
+
+cmd="${1:-help}"
+shift 2>/dev/null || true
+
+case "$cmd" in
+  update)
+    tmp=$(mktemp -d)
+    trap 'rm -rf "$tmp"' EXIT
+    info "Downloading latest installer from $REPO_URL ..."
+    if curl -fsSL "${REPO_URL}/raw/refs/heads/main/install.sh" -o "$tmp/install.sh"; then
+      bash "$tmp/install.sh" --force "$@"
+    else
+      err "Download failed. Check your connection or set CSL_REPO_URL."
+      exit 1
+    fi
+    ;;
+  version)
+    if [ -f "$INSTALL_DIR/VERSION" ]; then
+      cat "$INSTALL_DIR/VERSION"
+    else
+      printf 'unknown\n'
+    fi
+    ;;
+  uninstall)
+    if [ -f "$INSTALL_DIR/uninstall.sh" ]; then
+      bash "$INSTALL_DIR/uninstall.sh" "$@"
+    else
+      err "Uninstaller not found at $INSTALL_DIR/uninstall.sh"
+      exit 1
+    fi
+    ;;
+  help|--help|-h)
+    cat <<'HELP_EOF'
+Usage: claude-statusline <command> [options]
+
+Commands:
+  update      download and re-install the latest version
+  version     show the installed version
+  uninstall   remove claude-statusline
+  help        show this help
+
+Environment variables:
+  CSL_INSTALL_DIR   override install directory (default: ~/.local/share/claude-statusline)
+  CSL_REPO_URL      override repository URL
+HELP_EOF
+    ;;
+  *)
+    err "Unknown command: $cmd"
+    printf 'Run '\''claude-statusline help'\'' for usage.\n' >&2
+    exit 1
+    ;;
+esac
+WRAPPER_EOF
+  chmod +x "$WRAPPER_DIR/claude-statusline"
+  ok "CLI wrapper → $WRAPPER_DIR/claude-statusline"
+  if ! printf '%s' ":${PATH}:" | grep -q ":${WRAPPER_DIR}:"; then
+    warn "$WRAPPER_DIR is not in your PATH."
+    info "Add this to your shell profile (~/.zshrc or ~/.bashrc):"
+    info "  export PATH=\"\$HOME/.local/bin:\$PATH\""
+  fi
 }
 
 ensure_user_config() {
@@ -275,8 +357,11 @@ $(ok "claude-statusline ready")
   Change preset:
     edit $CONFIG_FILE → set "preset" to "minimal", "default", or "developer"
 
+  Update to latest:
+    claude-statusline update
+
   Uninstall:
-    $INSTALL_DIR/uninstall.sh
+    claude-statusline uninstall
 EOF
 }
 
@@ -285,6 +370,7 @@ main() {
   require_jq
   detect_source
   copy_files
+  install_cli_wrapper
   ensure_user_config
   warn_project_override
 
