@@ -14,6 +14,8 @@ Opus xhigh │ ctx        ⣿⣿⣿⣿⣿ 58% │ 5h          ⣿⣿ 76% 22:00 �
 
 ### npm
 
+Works on macOS, Linux, and Windows.
+
 ```bash
 npm install -g cc-statusline-cli
 ```
@@ -34,8 +36,8 @@ With npm, an existing custom statusline is kept during install. Replace it expli
 
 ## Requirements
 
-- Bash 3.2+
-- `jq` 1.6+
+- npm install: Node.js 18+
+- Homebrew install: Bash 3.2+ and `jq` 1.6+
 - `git` for repository status
 
 ## Help

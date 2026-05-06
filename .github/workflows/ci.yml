@@ -6,6 +6,41 @@ on:
   pull_request:
 
 jobs:
+  npm-smoke:
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Render fixture
+        shell: bash
+        run: NO_COLOR=1 node ./bin/cc-statusline.js render < tests/fixtures/with_rate_limits.json
+      - name: Show version
+        run: node ./bin/cc-statusline.js version
+      - name: Configure settings
+        shell: bash
+        env:
+          CCSL_CONFIG_DIR: ${{ runner.temp }}/ccsl-config
+          CCSL_SETTINGS_FILE: ${{ runner.temp }}/ccsl-settings.json
+        run: |
+          node ./bin/cc-statusline.js install --force
+          node -e "const s=require(process.env.CCSL_SETTINGS_FILE); if (!s.statusLine || !s.statusLine.command.includes('cc-statusline.js')) process.exit(1)"
+      - name: npm global install
+        shell: bash
+        env:
+          CCSL_CONFIG_DIR: ${{ runner.temp }}/ccsl-npm-config
+          CCSL_SETTINGS_FILE: ${{ runner.temp }}/ccsl-npm-settings.json
+        run: |
+          npm install -g . --prefix "${{ runner.temp }}/ccsl-prefix" --ignore-scripts=false --foreground-scripts
+          node -e "const s=require(process.env.CCSL_SETTINGS_FILE); if (!s.statusLine || !s.statusLine.command.includes('cc-statusline.js')) process.exit(1)"
+
   smoke:
     permissions:
       contents: read

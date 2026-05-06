@@ -16,11 +16,13 @@ This repository contains `cc-statusline`, a configurable statusline command for 
 
 The current stack is:
 
-- Bash 3.2+ for runtime and installer scripts.
+- Node.js 18+ for the npm CLI and Windows runtime.
+- Bash 3.2+ for Unix runtime and installer scripts.
 - `jq` 1.6+ for JSON parsing and config merging.
 - JSON presets under `presets/`.
 - Shell smoke tests under `tests/`.
-- macOS and Linux support. Windows support is through WSL unless native support is added later.
+- macOS and Linux support through the Bash runtime and Homebrew.
+- Windows support through the npm Node.js runtime.
 
 Current repository shape:
 
