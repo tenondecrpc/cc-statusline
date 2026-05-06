@@ -95,7 +95,10 @@ copy_files() {
     info "DRY RUN: would copy files to $INSTALL_DIR"
     return
   fi
-  if [ "$SOURCE_DIR" = "$INSTALL_DIR" ]; then
+  local src_resolved dst_resolved
+  src_resolved="$(cd "$SOURCE_DIR" 2>/dev/null && pwd -P || echo "$SOURCE_DIR")"
+  dst_resolved="$(cd "$INSTALL_DIR" 2>/dev/null && pwd -P || echo "$INSTALL_DIR")"
+  if [ "$SOURCE_DIR" = "$INSTALL_DIR" ] || [ "$src_resolved" = "$dst_resolved" ]; then
     info "Already at $INSTALL_DIR, skipping copy"
     return
   fi
@@ -374,7 +377,7 @@ write_settings() {
     echo '{}' > "$SETTINGS_FILE"
   fi
   local tmp
-  tmp="$(mktemp)"
+  tmp="$(mktemp "${SETTINGS_FILE}.tmp.XXXXXX")"
   jq --arg cmd "$INSTALL_DIR/statusline.sh" \
      '.statusLine = { "type": "command", "command": $cmd, "padding": 1 }' \
      "$SETTINGS_FILE" > "$tmp"
