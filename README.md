@@ -96,6 +96,58 @@ cp ~/.claude/settings.json.bak.YYYYMMDD-HHMMSS ~/.claude/settings.json
 brew uninstall cc-statusline-cli
 ```
 
+## Customization
+
+Create `~/.config/cc-statusline/config.json` to override any setting from the active preset. Only the fields you specify are changed - everything else keeps its default.
+
+### Switch preset
+
+```json
+{ "preset": "minimal" }
+```
+
+Built-in presets: `default`, `minimal`, `developer`.
+
+### Change modules shown
+
+```json
+{
+  "lines": [
+    ["model", "context_bar", "rate_limit"]
+  ]
+}
+```
+
+Available modules: `model`, `directory`, `git`, `context_bar`, `rate_limit`, `cost`, `session_timer`, `worktree`, `agent`, `vim_mode`.
+
+### Change separator and colors
+
+```json
+{
+  "separator": " | ",
+  "colors": {
+    "model": "cyan",
+    "directory": "blue"
+  }
+}
+```
+
+Color names: `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `white`, `gray`, `bright_green`, `bright_blue`.
+
+### Tweak a module option
+
+```json
+{
+  "modules": {
+    "directory": { "truncate": 20 },
+    "context_bar": { "width": 8 },
+    "cost": { "hide_below": 0.10 }
+  }
+}
+```
+
+Changes take effect immediately - no restart needed.
+
 ## License
 
 MIT
