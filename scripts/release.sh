@@ -47,7 +47,7 @@ if [[ ! -f "$FORMULA" ]]; then
 fi
 
 # Update url tag
-sed -i '' "s|/refs/tags/v[0-9]\+\.[0-9]\+\.[0-9]\+\.tar\.gz|/refs/tags/$TAG.tar.gz|" "$FORMULA"
+sed -i '' "s|/refs/tags/v[0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\.tar\.gz|/refs/tags/$TAG.tar.gz|" "$FORMULA"
 # Update sha256
 sed -i '' "s|sha256 \".*\"|sha256 \"$SHA256\"|" "$FORMULA"
 # Remove revision line if present (new source version resets it)
