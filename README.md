@@ -27,18 +27,29 @@ On Windows, run the same commands from PowerShell or CMD. The installer writes t
 
 ### Homebrew
 
-Homebrew install is for macOS only. The formula auto-configures `~/.claude/settings.json`
-during install; no extra step is needed.
+Homebrew install is for macOS only. It needs two steps: install the formula, then run `cc-statusline configure` to wire `~/.claude/settings.json`.
 
 ```bash
 brew tap tenondecrpc/tap
 brew install cc-statusline-cli
+cc-statusline configure
 ```
 
-After registration, restart Claude Code or open a new session. The statusline will appear automatically.
+The configure step is required because macOS TCC blocks Homebrew's `post_install` from writing under `~/.claude/`, so the formula cannot register the statusline by itself.
 
-If you already have a custom statusline, the installer asks before replacing it and creates a backup first.
-With npm, an existing custom statusline is kept during install. Replace it explicitly with `cc-statusline install --force`.
+Replace an existing custom statusline:
+
+```bash
+cc-statusline configure --force
+```
+
+Keep an existing custom statusline (only install files, leave settings.json alone):
+
+```bash
+cc-statusline configure --keep-existing
+```
+
+`cc-statusline configure` creates a backup of `~/.claude/settings.json` before changing it. After registration, restart Claude Code or open a new session for the statusline to appear.
 
 ## Requirements
 
@@ -76,11 +87,13 @@ Add `--purge` to also remove the user config directory (`~/.config/cc-statusline
 cc-statusline uninstall --purge
 ```
 
-For Homebrew, uninstall with `brew` and restore your previous `settings.json` from the backup the installer created:
+For Homebrew, restore your previous `settings.json` from the backup before uninstalling, otherwise Claude Code will reference a missing script:
 
 ```bash
+# pick the most recent backup, or remove the .statusLine entry by hand
+ls -t ~/.claude/settings.json.bak.* | head -1
+cp ~/.claude/settings.json.bak.YYYYMMDD-HHMMSS ~/.claude/settings.json
 brew uninstall cc-statusline-cli
-# manually restore from ~/.claude/settings.json.bak.* if needed
 ```
 
 ## License
