@@ -197,6 +197,67 @@ Every PR should answer:
 - How are existing statuslines, backups, and uninstall paths preserved if installer behavior changed?
 - Are privacy and local-only behavior preserved?
 
+## Cutting a Release
+
+Two repositories are involved on every release:
+
+- `tenondecrpc/claude-statusline` (this repo): source, `VERSION`, GitHub release, tarball.
+- `tenondecrpc/homebrew-tap`: the `Formula/claude-statusline.rb` brew users consume.
+
+The Homebrew formula does not live in this repo. Keeping a copy here causes the two checkouts to drift on every release, so the tap is the single source of truth for the formula.
+
+### New source release (typical case)
+
+1. Confirm `bash tests/test.sh` passes.
+2. Bump `VERSION` (keep the leading `v`, e.g. `v0.1.2`).
+3. Commit on `main` and tag the commit:
+   ```bash
+   git commit -am "feat: ..."
+   git tag vX.Y.Z
+   git push origin main vX.Y.Z
+   ```
+   Always tag the commit that bumps `VERSION`, never an earlier commit. The tarball must contain the new `VERSION` file or `claude-statusline version` reports the wrong value.
+4. Create the GitHub release:
+   ```bash
+   gh release create vX.Y.Z --title "vX.Y.Z" --notes "..."
+   ```
+5. Compute the tarball SHA256:
+   ```bash
+   curl -fsSL "https://github.com/tenondecrpc/claude-statusline/archive/refs/tags/vX.Y.Z.tar.gz" \
+     | shasum -a 256
+   ```
+6. In a checkout of `tenondecrpc/homebrew-tap`, edit `Formula/claude-statusline.rb`:
+   - update `url` to the new tag tarball,
+   - update `sha256` to the new hash,
+   - remove any `revision N` line if present (a new source version resets it).
+7. Validate, commit, push the tap:
+   ```bash
+   brew style Formula/claude-statusline.rb
+   git add Formula/claude-statusline.rb
+   git commit -m "chore: bump claude-statusline to vX.Y.Z"
+   git push origin main
+   ```
+8. Verify end to end:
+   ```bash
+   brew update
+   brew upgrade claude-statusline
+   claude-statusline version
+   ```
+
+### Formula-only fix (no source change)
+
+When only the formula needs to change (wrong `opt_libexec` usage, missing dependency, caveats text), do not cut a new source release. In the tap:
+
+1. Add or increment `revision N` after `license` in `Formula/claude-statusline.rb`.
+2. Apply the formula fix.
+3. `brew style`, commit, push.
+
+`brew upgrade claude-statusline` picks up the new revision for existing installs.
+
+### Path stability
+
+The wrapper and `post_install` must use `opt_libexec`, not `libexec`. `libexec` resolves to a version-pinned `Cellar/claude-statusline/X.Y.Z[_R]` directory that disappears on the next install, breaking `~/.claude/settings.json`. `opt_libexec` is the symlink Homebrew updates atomically.
+
 ## References
 
 - Repository bootstrap: `CLAUDE.md`
