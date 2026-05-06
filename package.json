@@ -1,6 +1,6 @@
 {
   "name": "cc-statusline-cli",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "description": "Configurable multi-line statusline command for Claude Code.",
   "license": "MIT",
   "homepage": "https://github.com/tenondecrpc/cc-statusline#readme",
