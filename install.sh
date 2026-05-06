@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# claude-statusline installer.
+# cc-statusline installer.
 # Usage:
 #   ./install.sh                     interactive (default)
 #   ./install.sh --force             replace any existing statusLine without asking
@@ -10,12 +10,12 @@
 
 set -uo pipefail
 
-REPO_URL="${CSL_REPO_URL:-https://github.com/tenondecrpc/claude-statusline}"
-INSTALL_DIR="${CSL_INSTALL_DIR:-$HOME/.local/share/claude-statusline}"
-CONFIG_DIR="${CSL_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/claude-statusline}"
+REPO_URL="${CCSL_REPO_URL:-https://github.com/tenondecrpc/cc-statusline}"
+INSTALL_DIR="${CCSL_INSTALL_DIR:-$HOME/.local/share/cc-statusline}"
+CONFIG_DIR="${CCSL_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/cc-statusline}"
 CONFIG_FILE="$CONFIG_DIR/config.json"
-SETTINGS_FILE="${CSL_SETTINGS_FILE:-$HOME/.claude/settings.json}"
-WRAPPER_DIR="${CSL_WRAPPER_DIR:-$HOME/.local/bin}"
+SETTINGS_FILE="${CCSL_SETTINGS_FILE:-$HOME/.claude/settings.json}"
+WRAPPER_DIR="${CCSL_WRAPPER_DIR:-$HOME/.local/bin}"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 
 FORCE=0
@@ -85,7 +85,7 @@ detect_source() {
   info "Source: downloading from $REPO_URL"
   if ! curl -fsSL "${REPO_URL}/archive/refs/heads/main.tar.gz" \
       | tar -xz -C "$SOURCE_DIR" --strip-components=1; then
-    err "Download failed. Set CSL_REPO_URL to a working repo or clone manually."
+    err "Download failed. Set CCSL_REPO_URL to a working repo or clone manually."
     exit 1
   fi
 }
@@ -117,16 +117,16 @@ copy_files() {
 
 install_cli_wrapper() {
   if [ "$DRY_RUN" -eq 1 ]; then
-    info "DRY RUN: would install CLI wrapper to $WRAPPER_DIR/claude-statusline"
+    info "DRY RUN: would install CLI wrapper to $WRAPPER_DIR/cc-statusline"
     return
   fi
   mkdir -p "$WRAPPER_DIR"
-  cat > "$WRAPPER_DIR/claude-statusline" <<'WRAPPER_EOF'
+  cat > "$WRAPPER_DIR/cc-statusline" <<'WRAPPER_EOF'
 #!/usr/bin/env bash
-# claude-statusline CLI wrapper - managed by install.sh, do not edit directly
+# cc-statusline CLI wrapper - managed by install.sh, do not edit directly
 
-INSTALL_DIR="${CSL_INSTALL_DIR:-$HOME/.local/share/claude-statusline}"
-REPO_URL="${CSL_REPO_URL:-https://github.com/tenondecrpc/claude-statusline}"
+INSTALL_DIR="${CCSL_INSTALL_DIR:-$HOME/.local/share/cc-statusline}"
+REPO_URL="${CCSL_REPO_URL:-https://github.com/tenondecrpc/cc-statusline}"
 
 info() { printf '\033[36m▸\033[0m %s\n' "$*"; }
 ok()   { printf '\033[32m✓\033[0m %s\n' "$*"; }
@@ -143,7 +143,7 @@ case "$cmd" in
     if curl -fsSL "${REPO_URL}/raw/refs/heads/main/install.sh" -o "$tmp/install.sh"; then
       bash "$tmp/install.sh" --force "$@"
     else
-      err "Download failed. Check your connection or set CSL_REPO_URL."
+      err "Download failed. Check your connection or set CCSL_REPO_URL."
       exit 1
     fi
     ;;
@@ -164,28 +164,28 @@ case "$cmd" in
     ;;
   help|--help|-h)
     cat <<'HELP_EOF'
-Usage: claude-statusline <command> [options]
+Usage: cc-statusline <command> [options]
 
 Commands:
   update      download and re-install the latest version
   version     show the installed version
-  uninstall   remove claude-statusline
+  uninstall   remove cc-statusline
   help        show this help
 
 Environment variables:
-  CSL_INSTALL_DIR   override install directory (default: ~/.local/share/claude-statusline)
-  CSL_REPO_URL      override repository URL
+  CCSL_INSTALL_DIR   override install directory (default: ~/.local/share/cc-statusline)
+  CCSL_REPO_URL      override repository URL
 HELP_EOF
     ;;
   *)
     err "Unknown command: $cmd"
-    printf 'Run '\''claude-statusline help'\'' for usage.\n' >&2
+    printf 'Run '\''cc-statusline help'\'' for usage.\n' >&2
     exit 1
     ;;
 esac
 WRAPPER_EOF
-  chmod +x "$WRAPPER_DIR/claude-statusline"
-  ok "CLI wrapper → $WRAPPER_DIR/claude-statusline"
+  chmod +x "$WRAPPER_DIR/cc-statusline"
+  ok "CLI wrapper → $WRAPPER_DIR/cc-statusline"
   if ! printf '%s' ":${PATH}:" | grep -q ":${WRAPPER_DIR}:"; then
     warn "$WRAPPER_DIR is not in your PATH."
     info "Add this to your shell profile (~/.zshrc or ~/.bashrc):"
@@ -236,13 +236,13 @@ classify_existing() {
   expanded=$(expand_tilde "$cmd")
 
   case "$cmd" in
-    *"claude-statusline/statusline.sh"*) echo "ours"; return ;;
+    *"cc-statusline/statusline.sh"*) echo "ours"; return ;;
     *ccstatusline*)                       echo "ccstatusline"; return ;;
-    *"claude-statusline prompt"*)         echo "felipeelias"; return ;;
+    *"cc-statusline prompt"*)         echo "felipeelias"; return ;;
   esac
 
   if [ -f "$expanded" ]; then
-    if grep -q "claude-statusline:v" "$expanded" 2>/dev/null; then
+    if grep -q "cc-statusline:v" "$expanded" 2>/dev/null; then
       echo "ours"; return
     fi
     if head -10 "$expanded" 2>/dev/null | grep -qiE "kamranahmedse|nilbuild"; then
@@ -261,7 +261,7 @@ prompt_action() {
     printf '  command: %s\n'   "$cmd"
     printf '  source : %s\n\n' "$source"
     printf 'What do you want to do?\n'
-    printf '  [r] Replace it with claude-statusline (your current setup will be backed up)\n'
+    printf '  [r] Replace it with cc-statusline (your current setup will be backed up)\n'
     printf '  [k] Keep your current statusline (script still installed for manual use)\n'
     printf '  [c] Cancel (no changes)\n\n'
   }
@@ -344,7 +344,7 @@ warn_project_override() {
 print_summary() {
   cat <<EOF
 
-$(ok "claude-statusline ready")
+$(ok "cc-statusline ready")
 
   Script    : $INSTALL_DIR/statusline.sh
   Config    : $CONFIG_FILE
@@ -358,10 +358,10 @@ $(ok "claude-statusline ready")
     edit $CONFIG_FILE → set "preset" to "minimal", "default", or "developer"
 
   Update to latest:
-    claude-statusline update
+    cc-statusline update
 
   Uninstall:
-    claude-statusline uninstall
+    cc-statusline uninstall
 EOF
 }
 
@@ -370,7 +370,7 @@ main() {
   require_jq
   detect_source
   copy_files
-  if [ "${CSL_SKIP_WRAPPER:-0}" != "1" ]; then
+  if [ "${CCSL_SKIP_WRAPPER:-0}" != "1" ]; then
     install_cli_wrapper
   fi
   ensure_user_config
@@ -386,7 +386,7 @@ main() {
       write_settings
       ;;
     ours)
-      ok "claude-statusline already configured. Idempotent re-run, settings unchanged."
+      ok "cc-statusline already configured. Idempotent re-run, settings unchanged."
       ;;
     ccstatusline|felipeelias|nilbuild|custom)
       local cmd

@@ -12,7 +12,7 @@ Keep product usage docs in `README.md`. Keep this file focused on how agents sho
 
 ## Project
 
-This repository contains `claude-statusline`, a configurable statusline command for Claude Code.
+This repository contains `cc-statusline`, a configurable statusline command for Claude Code.
 
 The current stack is:
 
@@ -79,7 +79,7 @@ Prefer portable Bash that works with Bash 3.2 on macOS.
 - Keep `set -uo pipefail` unless a specific script needs a documented exception.
 - Quote variable expansions unless word splitting is intentional.
 - Prefer functions with narrow responsibilities over large inline blocks.
-- Keep global variables namespaced with `CSL_` when they are shared across files.
+- Keep global variables namespaced with `CCSL_` when they are shared across files.
 - Avoid Bash features unavailable in Bash 3.2.
 - Avoid GNU-only command flags unless a macOS-compatible fallback exists.
 - When formatting dates, keep both BSD/macOS `date -r` and GNU/Linux `date -d` behavior in mind.
@@ -134,9 +134,9 @@ Installer changes must preserve:
 - Idempotent re-runs when this statusline is already configured.
 - Respect for `--force`, `--keep-existing`, `--abort-if-exists`, `--dry-run`, and `--non-interactive`.
 - Clear behavior when another statusline or custom command already exists.
-- Support for `CSL_INSTALL_DIR`, `CSL_CONFIG_DIR`, `CSL_SETTINGS_FILE`, and `CSL_REPO_URL`.
+- Support for `CCSL_INSTALL_DIR`, `CCSL_CONFIG_DIR`, `CCSL_SETTINGS_FILE`, and `CCSL_REPO_URL`.
 
-Do not write to real user config paths during tests or local verification unless the user explicitly asks. Use temporary directories and the `CSL_*` environment variables.
+Do not write to real user config paths during tests or local verification unless the user explicitly asks. Use temporary directories and the `CCSL_*` environment variables.
 
 ## Security And Privacy
 
@@ -169,7 +169,7 @@ Minimum checks:
 - Documentation-only changes: validate headings, terminology, ASCII punctuation, and consistency with current files.
 - Runtime or module changes: run `bash tests/test.sh`.
 - Preset changes: run `bash tests/test.sh` and render at least one fixture with `NO_COLOR=1 ./statusline.sh < tests/fixtures/with_rate_limits.json`.
-- Installer changes: test with temporary paths using `CSL_INSTALL_DIR`, `CSL_CONFIG_DIR`, and `CSL_SETTINGS_FILE`.
+- Installer changes: test with temporary paths using `CCSL_INSTALL_DIR`, `CCSL_CONFIG_DIR`, and `CCSL_SETTINGS_FILE`.
 - Uninstaller changes: test against a temporary install and settings file.
 
 Useful local checks:
@@ -177,9 +177,9 @@ Useful local checks:
 ```bash
 bash tests/test.sh
 NO_COLOR=1 ./statusline.sh < tests/fixtures/with_rate_limits.json
-CSL_INSTALL_DIR=/tmp/csl-install \
-CSL_CONFIG_DIR=/tmp/csl-config \
-CSL_SETTINGS_FILE=/tmp/csl-settings.json \
+CCSL_INSTALL_DIR=/tmp/ccsl-install \
+CCSL_CONFIG_DIR=/tmp/ccsl-config \
+CCSL_SETTINGS_FILE=/tmp/ccsl-settings.json \
   ./install.sh --force
 ```
 
@@ -201,8 +201,8 @@ Every PR should answer:
 
 Two repositories are involved on every release:
 
-- `tenondecrpc/claude-statusline` (this repo): source, `VERSION`, GitHub release, tarball.
-- `tenondecrpc/homebrew-tap`: the `Formula/claude-statusline.rb` brew users consume.
+- `tenondecrpc/cc-statusline` (this repo): source, `VERSION`, GitHub release, tarball.
+- `tenondecrpc/homebrew-tap`: the `Formula/cc-statusline.rb` brew users consume.
 
 The Homebrew formula does not live in this repo. Keeping a copy here causes the two checkouts to drift on every release, so the tap is the single source of truth for the formula.
 
@@ -216,47 +216,47 @@ The Homebrew formula does not live in this repo. Keeping a copy here causes the 
    git tag vX.Y.Z
    git push origin main vX.Y.Z
    ```
-   Always tag the commit that bumps `VERSION`, never an earlier commit. The tarball must contain the new `VERSION` file or `claude-statusline version` reports the wrong value.
+   Always tag the commit that bumps `VERSION`, never an earlier commit. The tarball must contain the new `VERSION` file or `cc-statusline version` reports the wrong value.
 4. Create the GitHub release:
    ```bash
    gh release create vX.Y.Z --title "vX.Y.Z" --notes "..."
    ```
 5. Compute the tarball SHA256:
    ```bash
-   curl -fsSL "https://github.com/tenondecrpc/claude-statusline/archive/refs/tags/vX.Y.Z.tar.gz" \
+   curl -fsSL "https://github.com/tenondecrpc/cc-statusline/archive/refs/tags/vX.Y.Z.tar.gz" \
      | shasum -a 256
    ```
-6. In a checkout of `tenondecrpc/homebrew-tap`, edit `Formula/claude-statusline.rb`:
+6. In a checkout of `tenondecrpc/homebrew-tap`, edit `Formula/cc-statusline.rb`:
    - update `url` to the new tag tarball,
    - update `sha256` to the new hash,
    - remove any `revision N` line if present (a new source version resets it).
 7. Validate, commit, push the tap:
    ```bash
-   brew style Formula/claude-statusline.rb
-   git add Formula/claude-statusline.rb
-   git commit -m "chore: bump claude-statusline to vX.Y.Z"
+   brew style Formula/cc-statusline.rb
+   git add Formula/cc-statusline.rb
+   git commit -m "chore: bump cc-statusline to vX.Y.Z"
    git push origin main
    ```
 8. Verify end to end:
    ```bash
    brew update
-   brew upgrade claude-statusline
-   claude-statusline version
+   brew upgrade cc-statusline
+   cc-statusline version
    ```
 
 ### Formula-only fix (no source change)
 
 When only the formula needs to change (wrong `opt_libexec` usage, missing dependency, caveats text), do not cut a new source release. In the tap:
 
-1. Add or increment `revision N` after `license` in `Formula/claude-statusline.rb`.
+1. Add or increment `revision N` after `license` in `Formula/cc-statusline.rb`.
 2. Apply the formula fix.
 3. `brew style`, commit, push.
 
-`brew upgrade claude-statusline` picks up the new revision for existing installs.
+`brew upgrade cc-statusline` picks up the new revision for existing installs.
 
 ### Path stability
 
-The wrapper and `post_install` must use `opt_libexec`, not `libexec`. `libexec` resolves to a version-pinned `Cellar/claude-statusline/X.Y.Z[_R]` directory that disappears on the next install, breaking `~/.claude/settings.json`. `opt_libexec` is the symlink Homebrew updates atomically.
+The wrapper and `post_install` must use `opt_libexec`, not `libexec`. `libexec` resolves to a version-pinned `Cellar/cc-statusline/X.Y.Z[_R]` directory that disappears on the next install, breaking `~/.claude/settings.json`. `opt_libexec` is the symlink Homebrew updates atomically.
 
 ## References
 

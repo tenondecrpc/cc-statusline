@@ -1,4 +1,4 @@
-# PLAN - claude-statusline
+# PLAN - cc-statusline
 
 A Claude Code statusline that any developer can install with **one command**,
 use with **no configuration**, and customize by **editing a file**.
@@ -10,9 +10,9 @@ use with **no configuration**, and customize by **editing a file**.
 We are targeting the gap left by the 4 projects analyzed (see the table in
 `README.md` / the author's message):
 
-- More configurable than `nilbuild/claude-statusline`, which is for "personal use".
+- More configurable than `nilbuild/cc-statusline`, which is for "personal use".
 - Lighter and simpler than `sirmalloc/ccstatusline` in the render path, with no Node process on every render. The future TUI runs only for configuration.
-- Easier to install than `felipeelias/claude-statusline`, with no Go compilation and no mandatory Homebrew.
+- Easier to install than `felipeelias/cc-statusline`, with no Go compilation and no mandatory Homebrew.
 - Includes defaults and presets, unlike the DIY approach in the official docs.
 
 **Internal slogan:** *"git clone -> one command -> you have a statusline. Edit JSON if you want more."*
@@ -24,7 +24,7 @@ We are targeting the gap left by the 4 projects analyzed (see the table in
 1. **Zero-config first.** After installation, it works with useful data without touching anything.
 2. **One command to install.** `curl | bash` (or `npx`) and done.
 3. **No heavy runtime.** The render script is Bash + `jq`. No Node/Go startup on every update, since the statusline may run every few seconds.
-4. **TUI by default, file always editable.** When the TUI exists, it will be the recommended flow for configuring presets, modules, and colors. Even then, it must always create and persist `~/.config/claude-statusline/config.json` as a versionable source of truth that can be copied across machines and edited manually later.
+4. **TUI by default, file always editable.** When the TUI exists, it will be the recommended flow for configuring presets, modules, and colors. Even then, it must always create and persist `~/.config/cc-statusline/config.json` as a versionable source of truth that can be copied across machines and edited manually later.
 5. **Multiline out of the box.** This is one of Claude Code's most useful features, and half of the competitors do not support it.
 6. **Safe and idempotent installation.** Back up `settings.json`, merge with `jq`, and provide an uninstall flow that restores.
 7. **Progressive customization:** preset -> module tweaks -> custom modules (shell command).
@@ -60,25 +60,25 @@ We are targeting the gap left by the 4 projects analyzed (see the table in
 ### Main Command
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tenondecrpc/claude-statusline/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tenondecrpc/cc-statusline/main/install.sh | bash
 ```
 
 Equivalents:
-- `brew install <tap>/claude-statusline` (future)
-- `npx @<scope>/claude-statusline install` (lightweight wrapper)
+- `brew install <tap>/cc-statusline` (future)
+- `npx @<scope>/cc-statusline install` (lightweight wrapper)
 
 ### Installer Flow (`install.sh`)
 
 1. Detect `jq`. If it is missing, offer to install it (`brew`/`apt`/`dnf`) or abort with clear instructions.
-2. Create `~/.local/share/claude-statusline/` and copy `statusline.sh` + `lib/`.
-3. Create `~/.config/claude-statusline/config.json` **only if it does not exist** (default preset).
+2. Create `~/.local/share/cc-statusline/` and copy `statusline.sh` + `lib/`.
+3. Create `~/.config/cc-statusline/config.json` **only if it does not exist** (default preset).
 4. **Detect any pre-existing statusline** in `~/.claude/settings.json` (see section 4.1).
 5. Back up `~/.claude/settings.json` to `~/.claude/settings.json.bak.<timestamp>`.
 6. Merge with `jq` only if the user confirms it (or if it was already set by us):
    ```bash
    jq '.statusLine = {
      "type": "command",
-     "command": "~/.local/share/claude-statusline/statusline.sh",
+     "command": "~/.local/share/cc-statusline/statusline.sh",
      "padding": 1
    }' settings.json > settings.json.tmp && mv settings.json.tmp settings.json
    ```
@@ -91,8 +91,8 @@ Before touching `~/.claude/settings.json`, the installer classifies the current 
 | Case | How it is detected | Default action |
 |---|---|---|
 | **A. No `statusLine`** | `jq -e '.statusLine' settings.json` fails | Clean installation, no prompts. |
-| **B. It is ours** (reinstall / upgrade) | The `command` points to `~/.local/share/claude-statusline/statusline.sh` **or** the script has the marker `# claude-statusline:vX.Y.Z` | Idempotent: update the script, leave `config.json` intact, and do not mutate `settings.json` unless the path changed. No prompts. |
-| **C. It belongs to another known project** | Match by path/command: `npx ccstatusline*`, `claude-statusline prompt` (felipeelias), `~/.claude/statusline.sh` with a nilbuild header | Interactive prompt: **Replace / Keep / Cancel**. Show which tool it came from (`"Detected: ccstatusline"`). |
+| **B. It is ours** (reinstall / upgrade) | The `command` points to `~/.local/share/cc-statusline/statusline.sh` **or** the script has the marker `# cc-statusline:vX.Y.Z` | Idempotent: update the script, leave `config.json` intact, and do not mutate `settings.json` unless the path changed. No prompts. |
+| **C. It belongs to another known project** | Match by path/command: `npx ccstatusline*`, `cc-statusline prompt` (felipeelias), `~/.claude/statusline.sh` with a nilbuild header | Interactive prompt: **Replace / Keep / Cancel**. Show which tool it came from (`"Detected: ccstatusline"`). |
 | **D. It is a custom user script** | Any other `command` | More cautious interactive prompt: print the current `command` and the first 3 lines of the script if it is a file. **Replace / Keep / Cancel**, default = `Cancel`. |
 | **E. `settings.json` does not exist or is empty** | Missing file | Create a minimal `~/.claude/settings.json` with only `statusLine`. |
 
@@ -104,7 +104,7 @@ Detected an existing statusLine in ~/.claude/settings.json:
   source : <ccstatusline | felipeelias | nilbuild | custom script | inline>
 
 What do you want to do?
-  [r] Replace it with claude-statusline (your current setup will be backed up)
+  [r] Replace it with cc-statusline (your current setup will be backed up)
   [k] Keep your current statusline and exit  (we'll still drop our script for manual use)
   [c] Cancel (no changes)
 
@@ -120,12 +120,12 @@ What do you want to do?
 
 ```bash
 #!/usr/bin/env bash
-# claude-statusline:vX.Y.Z https://github.com/tenondecrpc/claude-statusline
+# cc-statusline:vX.Y.Z https://github.com/tenondecrpc/cc-statusline
 ```
 
 This makes case B detection robust even if the user moved the script to another path.
 
-**Project-level override.** If `<cwd>/.claude/settings.json` exists with a different `statusLine`, **we do not touch it** and we warn: *"Project-level statusLine in `./.claude/settings.json` will override the user-level one. Edit that file if you want claude-statusline to apply here."*
+**Project-level override.** If `<cwd>/.claude/settings.json` exists with a different `statusLine`, **we do not touch it** and we warn: *"Project-level statusLine in `./.claude/settings.json` will override the user-level one. Edit that file if you want cc-statusline to apply here."*
 
 **Non-interactive flags** (for CI / dotfiles):
 
@@ -143,14 +143,14 @@ Default with no flags: interactive prompt in C/D, idempotent in B, clean in A/E.
 1. If there is a `.bak` for `settings.json`, restore the most recent one, preserving the previous statusline no matter whose it was.
 2. Otherwise, remove the `statusLine` key with `jq 'del(.statusLine)'`.
 3. If `~/.claude/statusline.sh.bak.<timestamp>` exists, offer to restore it to `~/.claude/statusline.sh`.
-4. Delete `~/.local/share/claude-statusline/`, and ask before deleting `~/.config/claude-statusline/config.json`.
+4. Delete `~/.local/share/cc-statusline/`, and ask before deleting `~/.config/cc-statusline/config.json`.
 5. Flags: `--purge` (delete config without asking), `--keep-backups` (do not delete `.bak` files).
 
 ---
 
 ## 5. Configuration Model
 
-`~/.config/claude-statusline/config.json`:
+`~/.config/cc-statusline/config.json`:
 
 ```json
 {
@@ -222,7 +222,7 @@ All presets are stored as JSON in `presets/` and embedded in the script.
 ## 8. Repo Structure
 
 ```text
-claude-statusline/
+cc-statusline/
 ├── README.md                  # quickstart + screenshot + preset table
 ├── PLAN.md                    # this file
 ├── LICENSE                    # MIT
@@ -279,16 +279,16 @@ claude-statusline/
 - [ ] `powerline` preset with Nerd Font detection + fallback.
 - [ ] OSC 8 (clickable branches and dirs).
 - [ ] Modules `worktree`, `vim_mode`, `session_timer`, `lines_changed`.
-- [ ] Subcommands: `claude-statusline test` (mock data) and `claude-statusline themes`.
+- [ ] Subcommands: `cc-statusline test` (mock data) and `cc-statusline themes`.
 - [ ] Homebrew tap.
 
 ### v0.3.0 - Extensibility
 - [ ] `custom` module with timeout and caching.
-- [ ] Plugin folder: `~/.config/claude-statusline/modules/<name>.sh`.
+- [ ] Plugin folder: `~/.config/cc-statusline/modules/<name>.sh`.
 - [ ] Smart truncation when the terminal is narrow.
 
 ### v0.4.0+
-- [ ] Wrapper `npx @<scope>/claude-statusline` for Windows/cross-platform.
+- [ ] Wrapper `npx @<scope>/cc-statusline` for Windows/cross-platform.
 - [ ] PowerShell port for native Windows.
 - [ ] Theme builder: command that generates an interactive preset.
 - [ ] `ccstatusline`-style TUI as the default configuration flow for presets, modules, colors, and preview. The UX decision for non-technical users is **editing a file < clicking menus**, but the TUI must create and save everything in `config.json` to allow later manual editing.

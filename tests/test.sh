@@ -12,7 +12,7 @@ FAIL=0
 
 TMP_CONFIG="$(mktemp -d)"
 trap 'rm -rf "$TMP_CONFIG"' EXIT
-export CSL_CONFIG_DIR="$TMP_CONFIG"
+export CCSL_CONFIG_DIR="$TMP_CONFIG"
 
 run_case() {
   local fixture="$1" preset="$2"

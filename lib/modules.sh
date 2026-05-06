@@ -25,13 +25,13 @@ mod_model() {
     fi
   fi
 
-  out=$(csl_wrap "$(cfg '.colors.model // "white"')" "$name")
+  out=$(ccsl_wrap "$(cfg '.colors.model // "white"')" "$name")
 
   with_effort=$(cfg '.modules.model.with_effort // false')
   if [ "$with_effort" = "true" ]; then
     effort=$(printf '%s' "$INPUT_JSON" | jq -r '.effort.level // empty')
     if [ -n "$effort" ]; then
-      out="$out $(csl_wrap "$(cfg '.colors.effort // "gray"')" "$effort")"
+      out="$out $(ccsl_wrap "$(cfg '.colors.effort // "gray"')" "$effort")"
     fi
   fi
   printf '%s' "$out"
@@ -41,7 +41,7 @@ mod_effort() {
   local level
   level=$(printf '%s' "$INPUT_JSON" | jq -r '.effort.level // empty')
   [ -z "$level" ] && return 0
-  csl_wrap "$(cfg '.colors.effort // "gray"')" "$level"
+  ccsl_wrap "$(cfg '.colors.effort // "gray"')" "$level"
 }
 
 basic_bg_color_for() {
@@ -165,7 +165,7 @@ mod_directory() {
     local keep=$((truncate - 1))
     dir="…${dir: -$keep}"
   fi
-  csl_wrap "$(cfg '.colors.directory // "blue"')" "$dir"
+  ccsl_wrap "$(cfg '.colors.directory // "blue"')" "$dir"
 }
 
 mod_git() {
@@ -202,7 +202,7 @@ mod_git() {
   else
     color=$(cfg '.colors.git_clean // "green"')
   fi
-  csl_wrap "$color" "$out"
+  ccsl_wrap "$color" "$out"
 }
 
 threshold_color() {
@@ -254,7 +254,7 @@ mod_context_pct() {
   warn_at=$(cfg '.modules.context_bar.thresholds_pct[0] // 70')
   crit_at=$(cfg '.modules.context_bar.thresholds_pct[1] // 90')
   color=$(threshold_color "$pct" "$warn_at" "$crit_at" "context_ok" "context_warn" "context_crit")
-  csl_wrap "$color" "ctx ${pct}%"
+  ccsl_wrap "$color" "ctx ${pct}%"
 }
 
 render_rate_segment() {
@@ -269,7 +269,7 @@ render_rate_segment() {
     reset_str=$(format_reset_time "$resets")
     if [ -n "$reset_str" ]; then
       printf ' '
-      csl_wrap "$(cfg '.colors.rate_reset // "gray"')" "$reset_str"
+      ccsl_wrap "$(cfg '.colors.rate_reset // "gray"')" "$reset_str"
     fi
   fi
 }
@@ -300,7 +300,7 @@ mod_cost() {
   [ "$skip" = "1" ] && return 0
 
   formatted=$(awk -v c="$cost" -v f="$format" 'BEGIN { printf f, c+0 }')
-  csl_wrap "$(cfg '.colors.cost // "magenta"')" "$formatted"
+  ccsl_wrap "$(cfg '.colors.cost // "magenta"')" "$formatted"
 }
 
 mod_rate_limit() {
@@ -315,7 +315,7 @@ mod_rate_limit() {
     text+="7d $(awk -v v="$seven" 'BEGIN{printf "%.0f", v+0}')%"
   fi
   [ -z "$text" ] && return 0
-  csl_wrap "$(cfg '.colors.rate_limit // "gray"')" "$text"
+  ccsl_wrap "$(cfg '.colors.rate_limit // "gray"')" "$text"
 }
 
 mod_session_timer() {
@@ -332,7 +332,7 @@ mod_session_timer() {
   else
     out="${s}s"
   fi
-  csl_wrap "$(cfg '.colors.session_timer // "gray"')" "$out"
+  ccsl_wrap "$(cfg '.colors.session_timer // "gray"')" "$out"
 }
 
 mod_lines_changed() {
@@ -340,26 +340,26 @@ mod_lines_changed() {
   added=$(printf '%s' "$INPUT_JSON" | jq -r '.cost.total_lines_added // 0')
   removed=$(printf '%s' "$INPUT_JSON" | jq -r '.cost.total_lines_removed // 0')
   if [ "$added" -eq 0 ] && [ "$removed" -eq 0 ]; then return 0; fi
-  csl_wrap "$(cfg '.colors.lines_changed // "gray"')" "+${added} -${removed}"
+  ccsl_wrap "$(cfg '.colors.lines_changed // "gray"')" "+${added} -${removed}"
 }
 
 mod_vim_mode() {
   local mode
   mode=$(printf '%s' "$INPUT_JSON" | jq -r '.vim.mode // empty')
   [ -z "$mode" ] && return 0
-  csl_wrap "$(cfg '.colors.vim_mode // "magenta"')" "[$mode]"
+  ccsl_wrap "$(cfg '.colors.vim_mode // "magenta"')" "[$mode]"
 }
 
 mod_worktree() {
   local name
   name=$(printf '%s' "$INPUT_JSON" | jq -r '.worktree.name // .workspace.git_worktree // empty')
   [ -z "$name" ] && return 0
-  csl_wrap "$(cfg '.colors.worktree // "blue"')" "wt:$name"
+  ccsl_wrap "$(cfg '.colors.worktree // "blue"')" "wt:$name"
 }
 
 mod_agent() {
   local name
   name=$(printf '%s' "$INPUT_JSON" | jq -r '.agent.name // empty')
   [ -z "$name" ] && return 0
-  csl_wrap "$(cfg '.colors.agent // "magenta"')" "@$name"
+  ccsl_wrap "$(cfg '.colors.agent // "magenta"')" "@$name"
 }

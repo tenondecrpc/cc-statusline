@@ -1,11 +1,11 @@
-# claude-statusline
+# cc-statusline
 
 Configurable, multi-line statusline for [Claude Code](https://docs.anthropic.com/en/docs/claude-code).
 Bash + `jq`. No runtime to install. No TUI to learn. One-command install with safe backups.
 
 Default after first install:
 
-![Default claude-statusline output](./screenshot.png)
+![Default cc-statusline output](./screenshot.png)
 
 ```
 Opus xhigh │ ctx        ⣿⣿⣿⣿⣿ 58% │ 5h          ⣿⣿ 76% 22:00 │ 7d    ⣿⣿⣿⣿⣿⣿⣿⣿ 29% May 06 02:00
@@ -22,14 +22,14 @@ Windows support is on the roadmap. For now, use WSL on Windows.
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tenondecrpc/claude-statusline/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/tenondecrpc/cc-statusline/main/install.sh | bash
 ```
 
 The installer:
 
 - detects `jq` (and tells you how to install it if missing),
-- drops files in `~/.local/share/claude-statusline/`,
-- creates `~/.config/claude-statusline/config.json` (only if it doesn't exist),
+- drops files in `~/.local/share/cc-statusline/`,
+- creates `~/.config/cc-statusline/config.json` (only if it doesn't exist),
 - **detects an existing statusline** and asks before replacing — see [What happens if I already have a statusline?](#what-happens-if-i-already-have-a-statusline),
 - **backs up** `~/.claude/settings.json` and the previous script before any change.
 
@@ -39,27 +39,27 @@ After install, the `statusLine` field in your `~/.claude/settings.json` points t
 
 ```bash
 brew tap tenondecrpc/tap
-brew install claude-statusline
+brew install cc-statusline
 ```
 
 `brew install` wires up `~/.claude/settings.json` automatically. If a custom `statusLine` is already configured, it is kept; replace it later with:
 
 ```bash
-claude-statusline configure --force
+cc-statusline configure --force
 ```
 
 Update and uninstall via Homebrew:
 
 ```bash
-brew upgrade claude-statusline
-brew uninstall claude-statusline
+brew upgrade cc-statusline
+brew uninstall cc-statusline
 ```
 
 Before `brew uninstall`, restore your previous statusLine from `~/.claude/settings.json.bak.*` (or delete the `statusLine` entry manually), otherwise Claude Code will reference a missing script.
 
 ## Customize
 
-Edit `~/.config/claude-statusline/config.json`:
+Edit `~/.config/cc-statusline/config.json`:
 
 ```json
 { "preset": "developer" }
@@ -129,7 +129,7 @@ The installer classifies the current state and acts accordingly:
 |---|---|
 | no `statusLine` set | install cleanly |
 | **our** statusline (re-run / upgrade) | idempotent, no prompt |
-| `ccstatusline`, `felipeelias/claude-statusline`, `nilbuild/claude-statusline` | prompt: **Replace / Keep / Cancel** |
+| `ccstatusline`, `felipeelias/cc-statusline`, `nilbuild/cc-statusline` | prompt: **Replace / Keep / Cancel** |
 | custom user script or inline command | prompt with preview of the current command |
 | project-level `./.claude/settings.json` overrides user settings | warn, leave it alone |
 
@@ -141,7 +141,7 @@ Detected an existing statusLine in ~/.claude/settings.json:
   source : custom
 
 What do you want to do?
-  [r] Replace it with claude-statusline (your current setup will be backed up)
+  [r] Replace it with cc-statusline (your current setup will be backed up)
   [k] Keep your current statusline (script still installed for manual use)
   [c] Cancel (no changes)
 ```
@@ -156,7 +156,7 @@ In every replace path, the installer creates timestamped backups:
 
 ### When should I use `--force`?
 
-Use `--force` only when you already want `~/.claude/settings.json` to point to `claude-statusline`, replacing whatever `statusLine` is currently there. It still creates backups first.
+Use `--force` only when you already want `~/.claude/settings.json` to point to `cc-statusline`, replacing whatever `statusLine` is currently there. It still creates backups first.
 
 Typical cases:
 
@@ -169,13 +169,13 @@ Do not use `--force` if you only want to install the files for manual testing. U
 With the one-line installer, pass flags after `bash -s --`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tenondecrpc/claude-statusline/main/install.sh | bash -s -- --force
+curl -fsSL https://raw.githubusercontent.com/tenondecrpc/cc-statusline/main/install.sh | bash -s -- --force
 ```
 
 To install the files but keep your current `statusLine`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/tenondecrpc/claude-statusline/main/install.sh | bash -s -- --keep-existing
+curl -fsSL https://raw.githubusercontent.com/tenondecrpc/cc-statusline/main/install.sh | bash -s -- --keep-existing
 ```
 
 ### Non-interactive flags
@@ -191,19 +191,19 @@ curl -fsSL https://raw.githubusercontent.com/tenondecrpc/claude-statusline/main/
 ## Update
 
 ```bash
-claude-statusline update
+cc-statusline update
 ```
 
-Downloads the latest `install.sh` from the repository and re-runs it with `--force`. Your config file (`~/.config/claude-statusline/config.json`) is never overwritten during an update.
+Downloads the latest `install.sh` from the repository and re-runs it with `--force`. Your config file (`~/.config/cc-statusline/config.json`) is never overwritten during an update.
 
 ```bash
-claude-statusline version   # show installed version
+cc-statusline version   # show installed version
 ```
 
 ## Uninstall
 
 ```bash
-claude-statusline uninstall
+cc-statusline uninstall
 ```
 
 Restores the latest backup of `~/.claude/settings.json` (so the previous statusline, ours or anyone else's, comes back), removes the install dir, and keeps your config (use `--purge` to wipe it).
@@ -224,9 +224,9 @@ bash tests/test.sh
 NO_COLOR=1 ./statusline.sh < tests/fixtures/with_rate_limits.json
 
 # install from this checkout (sandboxed)
-CSL_INSTALL_DIR=/tmp/csl-install \
-CSL_CONFIG_DIR=/tmp/csl-config \
-CSL_SETTINGS_FILE=/tmp/csl-settings.json \
+CCSL_INSTALL_DIR=/tmp/ccsl-install \
+CCSL_CONFIG_DIR=/tmp/ccsl-config \
+CCSL_SETTINGS_FILE=/tmp/ccsl-settings.json \
   ./install.sh --force
 ```
 

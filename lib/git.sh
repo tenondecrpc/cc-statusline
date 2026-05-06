@@ -1,26 +1,26 @@
-# Git helpers. All commands run with -C "$CSL_GIT_CWD".
+# Git helpers. All commands run with -C "$CCSL_GIT_CWD".
 
-CSL_GIT_CWD=""
+CCSL_GIT_CWD=""
 
 git_init_cwd() {
-  CSL_GIT_CWD=$(printf '%s' "$INPUT_JSON" | jq -r '.workspace.current_dir // .cwd // "."')
+  CCSL_GIT_CWD=$(printf '%s' "$INPUT_JSON" | jq -r '.workspace.current_dir // .cwd // "."')
 }
 
 git_in_repo() {
   git_init_cwd
   command -v git >/dev/null 2>&1 || return 1
-  git -C "$CSL_GIT_CWD" rev-parse --git-dir >/dev/null 2>&1
+  git -C "$CCSL_GIT_CWD" rev-parse --git-dir >/dev/null 2>&1
 }
 
 git_branch_name() {
-  git -C "$CSL_GIT_CWD" symbolic-ref --short HEAD 2>/dev/null \
-    || git -C "$CSL_GIT_CWD" rev-parse --short HEAD 2>/dev/null
+  git -C "$CCSL_GIT_CWD" symbolic-ref --short HEAD 2>/dev/null \
+    || git -C "$CCSL_GIT_CWD" rev-parse --short HEAD 2>/dev/null
 }
 
 # Prints "STAGED UNSTAGED UNTRACKED"
 git_status_counts() {
   local porcelain staged=0 unstaged=0 untracked=0 line x y
-  porcelain=$(git -C "$CSL_GIT_CWD" status --porcelain=v1 2>/dev/null) || {
+  porcelain=$(git -C "$CCSL_GIT_CWD" status --porcelain=v1 2>/dev/null) || {
     printf '0 0 0'
     return
   }
@@ -46,11 +46,11 @@ git_status_counts() {
 # Prints "AHEAD BEHIND"
 git_ahead_behind() {
   local upstream out
-  upstream=$(git -C "$CSL_GIT_CWD" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null) || {
+  upstream=$(git -C "$CCSL_GIT_CWD" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null) || {
     printf '0 0'
     return
   }
-  out=$(git -C "$CSL_GIT_CWD" rev-list --left-right --count "HEAD...$upstream" 2>/dev/null) || {
+  out=$(git -C "$CCSL_GIT_CWD" rev-list --left-right --count "HEAD...$upstream" 2>/dev/null) || {
     printf '0 0'
     return
   }

@@ -1,26 +1,26 @@
 # ANSI color helpers + capability detection.
 # 0=none, 1=16color, 2=256color, 3=truecolor
 
-CSL_COLOR_LEVEL=0
+CCSL_COLOR_LEVEL=0
 
 init_colors() {
   if [ -n "${NO_COLOR:-}" ]; then
-    CSL_COLOR_LEVEL=0
+    CCSL_COLOR_LEVEL=0
     return
   fi
   case "${COLORTERM:-}" in
-    truecolor|24bit) CSL_COLOR_LEVEL=3; return ;;
+    truecolor|24bit) CCSL_COLOR_LEVEL=3; return ;;
   esac
   case "${TERM:-}" in
-    *-256color|*-truecolor|alacritty|xterm-kitty) CSL_COLOR_LEVEL=2; return ;;
-    xterm*|screen*|tmux*|linux|rxvt*) CSL_COLOR_LEVEL=1; return ;;
-    dumb|"") CSL_COLOR_LEVEL=0; return ;;
+    *-256color|*-truecolor|alacritty|xterm-kitty) CCSL_COLOR_LEVEL=2; return ;;
+    xterm*|screen*|tmux*|linux|rxvt*) CCSL_COLOR_LEVEL=1; return ;;
+    dumb|"") CCSL_COLOR_LEVEL=0; return ;;
   esac
-  CSL_COLOR_LEVEL=1
+  CCSL_COLOR_LEVEL=1
 }
 
-csl_fg() {
-  [ "$CSL_COLOR_LEVEL" -eq 0 ] && return 0
+ccsl_fg() {
+  [ "$CCSL_COLOR_LEVEL" -eq 0 ] && return 0
   local name="$1"
   case "$name" in
     black)         printf '\033[30m' ;;
@@ -42,7 +42,7 @@ csl_fg() {
     "") return 0 ;;
     *)
       if [[ "$name" =~ ^#([0-9a-fA-F]{6})$ ]]; then
-        if [ "$CSL_COLOR_LEVEL" -ge 3 ]; then
+        if [ "$CCSL_COLOR_LEVEL" -ge 3 ]; then
           local hex="${BASH_REMATCH[1]}"
           printf '\033[38;2;%d;%d;%dm' \
             $((16#${hex:0:2})) $((16#${hex:2:2})) $((16#${hex:4:2}))
@@ -52,16 +52,16 @@ csl_fg() {
   esac
 }
 
-csl_reset() {
-  [ "$CSL_COLOR_LEVEL" -eq 0 ] && return 0
+ccsl_reset() {
+  [ "$CCSL_COLOR_LEVEL" -eq 0 ] && return 0
   printf '\033[0m'
 }
 
-csl_wrap() {
+ccsl_wrap() {
   local color="$1" text="$2"
-  if [ "$CSL_COLOR_LEVEL" -eq 0 ] || [ -z "$color" ]; then
+  if [ "$CCSL_COLOR_LEVEL" -eq 0 ] || [ -z "$color" ]; then
     printf '%s' "$text"
   else
-    printf '%s%s%s' "$(csl_fg "$color")" "$text" "$(csl_reset)"
+    printf '%s%s%s' "$(ccsl_fg "$color")" "$text" "$(ccsl_reset)"
   fi
 }

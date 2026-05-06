@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# claude-statusline uninstaller.
+# cc-statusline uninstaller.
 # Usage:
 #   ./uninstall.sh                  default: restore latest backup, keep config & remove install dir
 #   ./uninstall.sh --purge          also remove user config dir
@@ -7,9 +7,9 @@
 
 set -uo pipefail
 
-INSTALL_DIR="${CSL_INSTALL_DIR:-$HOME/.local/share/claude-statusline}"
-CONFIG_DIR="${CSL_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/claude-statusline}"
-SETTINGS_FILE="${CSL_SETTINGS_FILE:-$HOME/.claude/settings.json}"
+INSTALL_DIR="${CCSL_INSTALL_DIR:-$HOME/.local/share/cc-statusline}"
+CONFIG_DIR="${CCSL_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/cc-statusline}"
+SETTINGS_FILE="${CCSL_SETTINGS_FILE:-$HOME/.claude/settings.json}"
 
 PURGE=0
 KEEP_BACKUPS=0
