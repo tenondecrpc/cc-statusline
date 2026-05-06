@@ -370,7 +370,9 @@ main() {
   require_jq
   detect_source
   copy_files
-  install_cli_wrapper
+  if [ "${CSL_SKIP_WRAPPER:-0}" != "1" ]; then
+    install_cli_wrapper
+  fi
   ensure_user_config
   warn_project_override
 

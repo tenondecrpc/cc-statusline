@@ -35,6 +35,28 @@ The installer:
 
 After install, the `statusLine` field in your `~/.claude/settings.json` points to our script. Your next interaction with Claude Code shows the new line.
 
+### Install via Homebrew
+
+```bash
+brew tap tenondecrpc/tap
+brew install claude-statusline
+```
+
+`brew install` wires up `~/.claude/settings.json` automatically. If a custom `statusLine` is already configured, it is kept; replace it later with:
+
+```bash
+claude-statusline configure --force
+```
+
+Update and uninstall via Homebrew:
+
+```bash
+brew upgrade claude-statusline
+brew uninstall claude-statusline
+```
+
+Before `brew uninstall`, restore your previous statusLine from `~/.claude/settings.json.bak.*` (or delete the `statusLine` entry manually), otherwise Claude Code will reference a missing script.
+
 ## Customize
 
 Edit `~/.config/claude-statusline/config.json`:
