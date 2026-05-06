@@ -26,18 +26,20 @@ jobs:
         run: bash tests/test.sh
       - name: Sandboxed install
         env:
-          CSL_INSTALL_DIR: /tmp/csl-install
-          CSL_CONFIG_DIR: /tmp/csl-config
-          CSL_SETTINGS_FILE: /tmp/csl-settings.json
+          CCSL_INSTALL_DIR: /tmp/csl-install
+          CCSL_CONFIG_DIR: /tmp/csl-config
+          CCSL_SETTINGS_FILE: /tmp/csl-settings.json
+          CCSL_WRAPPER_DIR: /tmp/csl-bin
         run: |
           ./install.sh --force --non-interactive
           test -x /tmp/csl-install/statusline.sh
           jq -e '.statusLine.command' /tmp/csl-settings.json
       - name: Sandboxed uninstall
         env:
-          CSL_INSTALL_DIR: /tmp/csl-install
-          CSL_CONFIG_DIR: /tmp/csl-config
-          CSL_SETTINGS_FILE: /tmp/csl-settings.json
+          CCSL_INSTALL_DIR: /tmp/csl-install
+          CCSL_CONFIG_DIR: /tmp/csl-config
+          CCSL_SETTINGS_FILE: /tmp/csl-settings.json
+          CCSL_WRAPPER_DIR: /tmp/csl-bin
         run: |
           /tmp/csl-install/uninstall.sh --purge
           test ! -d /tmp/csl-install
