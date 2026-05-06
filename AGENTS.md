@@ -201,7 +201,7 @@ Every PR should answer:
 
 Two repositories are involved on every release:
 
-- `tenondecrpc/cc-statusline` (this repo): source, `VERSION`, GitHub release, tarball.
+- `tenondecrpc/cc-statusline` (this repo): source, `package.json`, GitHub release, tarball.
 - `tenondecrpc/homebrew-tap`: the `Formula/cc-statusline.rb` brew users consume.
 
 The Homebrew formula does not live in this repo. Keeping a copy here causes the two checkouts to drift on every release, so the tap is the single source of truth for the formula.
@@ -209,14 +209,14 @@ The Homebrew formula does not live in this repo. Keeping a copy here causes the 
 ### New source release (typical case)
 
 1. Confirm `bash tests/test.sh` passes.
-2. Bump `VERSION` (keep the leading `v`, e.g. `v0.1.2`).
+2. Bump `package.json` version (no leading `v`, e.g. `0.1.2`).
 3. Commit on `main` and tag the commit:
    ```bash
    git commit -am "feat: ..."
    git tag vX.Y.Z
    git push origin main vX.Y.Z
    ```
-   Always tag the commit that bumps `VERSION`, never an earlier commit. The tarball must contain the new `VERSION` file or `cc-statusline version` reports the wrong value.
+   Always tag the commit that bumps `package.json`, never an earlier commit. `cc-statusline version` reads the installed `package.json`.
 4. Create the GitHub release:
    ```bash
    gh release create vX.Y.Z --title "vX.Y.Z" --notes "..."

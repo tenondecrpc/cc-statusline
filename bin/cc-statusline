@@ -13,7 +13,7 @@ done
 BIN_DIR="$(cd -P "$(dirname "$SOURCE")" && pwd)"
 PACKAGE_DIR="$(cd -P "$BIN_DIR/.." && pwd)"
 STATUSLINE="$PACKAGE_DIR/statusline.sh"
-VERSION_FILE="$PACKAGE_DIR/VERSION"
+PACKAGE_JSON="$PACKAGE_DIR/package.json"
 
 err() {
   printf 'cc-statusline: %s\n' "$*" >&2
@@ -56,8 +56,8 @@ case "$cmd" in
     exec "$PACKAGE_DIR/install.sh" "$@"
     ;;
   version)
-    if [ -f "$VERSION_FILE" ]; then
-      cat "$VERSION_FILE"
+    if [ -f "$PACKAGE_JSON" ] && command -v jq >/dev/null 2>&1; then
+      jq -r '"v" + .version' "$PACKAGE_JSON"
     else
       printf 'unknown\n'
     fi

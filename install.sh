@@ -108,8 +108,8 @@ copy_files() {
     cp "$SOURCE_DIR/uninstall.sh" "$INSTALL_DIR/"
     chmod +x "$INSTALL_DIR/uninstall.sh"
   fi
-  if [ -f "$SOURCE_DIR/VERSION" ]; then
-    cp "$SOURCE_DIR/VERSION" "$INSTALL_DIR/"
+  if [ -f "$SOURCE_DIR/package.json" ]; then
+    cp "$SOURCE_DIR/package.json" "$INSTALL_DIR/"
   fi
   chmod +x "$INSTALL_DIR/statusline.sh"
   ok "Installed files → $INSTALL_DIR"
@@ -148,8 +148,8 @@ case "$cmd" in
     fi
     ;;
   version)
-    if [ -f "$INSTALL_DIR/VERSION" ]; then
-      cat "$INSTALL_DIR/VERSION"
+    if [ -f "$INSTALL_DIR/package.json" ] && command -v jq >/dev/null 2>&1; then
+      jq -r '"v" + .version' "$INSTALL_DIR/package.json"
     else
       printf 'unknown\n'
     fi
@@ -242,7 +242,7 @@ classify_existing() {
   esac
 
   if [ -f "$expanded" ]; then
-    if grep -q "cc-statusline:v" "$expanded" 2>/dev/null; then
+    if grep -q "cc-statusline managed script\\|cc-statusline:v" "$expanded" 2>/dev/null; then
       echo "ours"; return
     fi
     if head -10 "$expanded" 2>/dev/null | grep -qiE "kamranahmedse|nilbuild"; then

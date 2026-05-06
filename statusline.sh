@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# cc-statusline:v0.1.0 https://github.com/tenondecrpc/cc-statusline
+# cc-statusline managed script https://github.com/tenondecrpc/cc-statusline
 # Reads Claude Code session JSON from stdin, prints a configurable status line.
 
 set -uo pipefail
