@@ -27,7 +27,8 @@ On Windows, run the same commands from PowerShell or CMD. The installer writes t
 
 ### Homebrew
 
-Homebrew install is for macOS only.
+Homebrew install is for macOS only. The formula auto-configures `~/.claude/settings.json`
+during install; no extra step is needed.
 
 ```bash
 brew tap tenondecrpc/tap

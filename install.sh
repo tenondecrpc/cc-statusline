@@ -135,6 +135,17 @@ err()  { printf '\033[31m✗\033[0m %s\n' "$*" >&2; }
 cmd="${1:-help}"
 shift 2>/dev/null || true
 
+# Forward to npm-installed binary when it exists, so commands like `install`,
+# `render`, and `configure` work regardless of which cc-statusline is on PATH.
+forward_to_npm() {
+  local npm_bin
+  npm_bin="$(command -v node >/dev/null && npm root -g 2>/dev/null || true)"
+  local js_bin="${npm_bin}/cc-statusline-cli/bin/cc-statusline.js"
+  if [ -x "$js_bin" ]; then
+    exec node "$js_bin" "$cmd" "$@"
+  fi
+}
+
 case "$cmd" in
   update)
     tmp=$(mktemp -d)
@@ -167,10 +178,15 @@ case "$cmd" in
 Usage: cc-statusline <command> [options]
 
 Commands:
+  install     configure Claude Code to use cc-statusline
+  configure   alias for install
+  render      read Claude Code session JSON from stdin and render the statusline
   update      download and re-install the latest version
   version     show the installed version
   uninstall   remove cc-statusline
   help        show this help
+
+With no command and piped stdin, cc-statusline renders the statusline.
 
 Environment variables:
   CCSL_INSTALL_DIR   override install directory (default: ~/.local/share/cc-statusline)
@@ -178,6 +194,7 @@ Environment variables:
 HELP_EOF
     ;;
   *)
+    forward_to_npm
     err "Unknown command: $cmd"
     printf 'Run '\''cc-statusline help'\'' for usage.\n' >&2
     exit 1
