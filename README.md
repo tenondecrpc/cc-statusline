@@ -56,16 +56,31 @@ cc-statusline version
 cc-statusline install --force
 ```
 
-Update or remove the package with the same tool you used to install it:
+## Uninstall
+
+Run `cc-statusline uninstall` to restore your previous `settings.json` backup and remove the npm package in one step:
 
 ```bash
-npm update -g cc-statusline-cli
-npm uninstall -g cc-statusline-cli
+cc-statusline uninstall
 ```
 
+If you only want to clean the `statusLine` entry without removing the package:
+
 ```bash
-brew upgrade cc-statusline-cli
+cc-statusline uninstall --keep-package
+```
+
+Add `--purge` to also remove the user config directory (`~/.config/cc-statusline`):
+
+```bash
+cc-statusline uninstall --purge
+```
+
+For Homebrew, uninstall with `brew` and restore your previous `settings.json` from the backup the installer created:
+
+```bash
 brew uninstall cc-statusline-cli
+# manually restore from ~/.claude/settings.json.bak.* if needed
 ```
 
 ## License
