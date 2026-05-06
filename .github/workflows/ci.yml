@@ -19,6 +19,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          check-latest: true
       - name: Render fixture
         shell: bash
         run: NO_COLOR=1 node ./bin/cc-statusline.js render < tests/fixtures/with_rate_limits.json

@@ -138,11 +138,16 @@ shift 2>/dev/null || true
 # Forward to npm-installed binary when it exists, so commands like `install`,
 # `render`, and `configure` work regardless of which cc-statusline is on PATH.
 forward_to_npm() {
-  local npm_bin
-  npm_bin="$(command -v node >/dev/null && npm root -g 2>/dev/null || true)"
-  local js_bin="${npm_bin}/cc-statusline-cli/bin/cc-statusline.js"
-  if [ -x "$js_bin" ]; then
-    exec node "$js_bin" "$cmd" "$@"
+  local npm_global
+  npm_global="$(npm config get prefix 2>/dev/null || true)"
+  if [ -z "$npm_global" ] && command -v node >/dev/null 2>&1; then
+    npm_global="$(node -e "console.log(process.env.npm_config_prefix || path.resolve(process.execPath, '../../lib/node_modules'))" 2>/dev/null || true)"
+  fi
+  if [ -n "$npm_global" ]; then
+    local js_bin="${npm_global}/lib/node_modules/cc-statusline-cli/bin/cc-statusline.js"
+    if [ -f "$js_bin" ]; then
+      exec node "$js_bin" "$cmd" "$@"
+    fi
   fi
 }
 
@@ -157,6 +162,31 @@ case "$cmd" in
       err "Download failed. Check your connection or set CCSL_REPO_URL."
       exit 1
     fi
+    ;;
+  install|configure)
+    forward_to_npm
+    # fallback: run installer directly
+    if [ -f "$INSTALL_DIR/install.sh" ]; then
+      bash "$INSTALL_DIR/install.sh" --force --non-interactive "$@"
+    else
+      tmp=$(mktemp -d)
+      trap 'rm -rf "$tmp"' EXIT
+      info "Downloading installer..."
+      if curl -fsSL "${REPO_URL}/raw/refs/heads/main/install.sh" -o "$tmp/install.sh"; then
+        bash "$tmp/install.sh" --force "$@"
+      else
+        err "Download failed. Check your connection or set CCSL_REPO_URL."
+        exit 1
+      fi
+    fi
+    ;;
+  render)
+    forward_to_npm
+    if [ -f "$INSTALL_DIR/statusline.sh" ]; then
+      exec bash "$INSTALL_DIR/statusline.sh" </dev/stdin
+    fi
+    err "statusline.sh not found. Run 'cc-statusline update' first."
+    exit 1
     ;;
   version)
     if [ -f "$INSTALL_DIR/package.json" ] && command -v jq >/dev/null 2>&1; then
