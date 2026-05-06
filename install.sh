@@ -100,16 +100,16 @@ copy_files() {
     return
   fi
   mkdir -p "$INSTALL_DIR"
-  cp "$SOURCE_DIR/statusline.sh" "$INSTALL_DIR/"
+  cp -f "$SOURCE_DIR/statusline.sh" "$INSTALL_DIR/"
   rm -rf "$INSTALL_DIR/lib" "$INSTALL_DIR/presets"
-  cp -r "$SOURCE_DIR/lib"     "$INSTALL_DIR/"
-  cp -r "$SOURCE_DIR/presets" "$INSTALL_DIR/"
+  cp -rf "$SOURCE_DIR/lib"     "$INSTALL_DIR/"
+  cp -rf "$SOURCE_DIR/presets" "$INSTALL_DIR/"
   if [ -f "$SOURCE_DIR/uninstall.sh" ]; then
-    cp "$SOURCE_DIR/uninstall.sh" "$INSTALL_DIR/"
+    cp -f "$SOURCE_DIR/uninstall.sh" "$INSTALL_DIR/"
     chmod +x "$INSTALL_DIR/uninstall.sh"
   fi
   if [ -f "$SOURCE_DIR/package.json" ]; then
-    cp "$SOURCE_DIR/package.json" "$INSTALL_DIR/"
+    cp -f "$SOURCE_DIR/package.json" "$INSTALL_DIR/"
   fi
   chmod +x "$INSTALL_DIR/statusline.sh"
   ok "Installed files → $INSTALL_DIR"
@@ -347,7 +347,7 @@ backup_settings_and_script() {
     return
   fi
   if [ -f "$SETTINGS_FILE" ]; then
-    cp "$SETTINGS_FILE" "${SETTINGS_FILE}.bak.${TIMESTAMP}"
+    cp -f "$SETTINGS_FILE" "${SETTINGS_FILE}.bak.${TIMESTAMP}"
     ok "Backed up settings.json → ${SETTINGS_FILE}.bak.${TIMESTAMP}"
   fi
   local cmd expanded
@@ -355,7 +355,7 @@ backup_settings_and_script() {
   [ -z "$cmd" ] && return
   expanded=$(expand_tilde "$cmd")
   if [ -f "$expanded" ] && [ "$expanded" != "$INSTALL_DIR/statusline.sh" ]; then
-    cp "$expanded" "${expanded}.bak.${TIMESTAMP}"
+    cp -f "$expanded" "${expanded}.bak.${TIMESTAMP}"
     ok "Backed up previous script → ${expanded}.bak.${TIMESTAMP}"
   elif [ -n "$cmd" ] && [ ! -f "$expanded" ]; then
     mkdir -p "$HOME/.claude"
@@ -378,7 +378,7 @@ write_settings() {
   jq --arg cmd "$INSTALL_DIR/statusline.sh" \
      '.statusLine = { "type": "command", "command": $cmd, "padding": 1 }' \
      "$SETTINGS_FILE" > "$tmp"
-  mv "$tmp" "$SETTINGS_FILE"
+  mv -f "$tmp" "$SETTINGS_FILE"
   ok "Wrote statusLine → $SETTINGS_FILE"
 }
 
