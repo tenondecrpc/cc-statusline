@@ -414,7 +414,7 @@ function quoteCommandArg(value) {
 }
 
 function statuslineCommand() {
-  return `${quoteCommandArg(process.execPath)} ${quoteCommandArg(__filename)} render`;
+  return `node ${quoteCommandArg(__filename)} render`;
 }
 
 function classifyExisting(settings) {
