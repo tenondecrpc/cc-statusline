@@ -196,6 +196,7 @@ case "$cmd" in
     fi
     ;;
   uninstall)
+    forward_to_npm
     if [ -f "$INSTALL_DIR/uninstall.sh" ]; then
       bash "$INSTALL_DIR/uninstall.sh" "$@"
     else

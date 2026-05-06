@@ -20,8 +20,19 @@ Commands:
   render      read Claude Code session JSON from stdin and render the statusline
   install     configure Claude Code to use cc-statusline
   configure   alias for install
+  uninstall   restore settings.json backup and uninstall the npm package
   version     show the packaged version
   help        show this help
+
+Install options:
+  --force             replace any existing statusLine
+  --keep-existing     install files but don't touch existing statusLine
+  --abort-if-exists   exit non-zero if statusLine already exists
+  --dry-run           print what would happen without writing
+
+Uninstall options:
+  --purge             also remove user config directory
+  --keep-package      don't run npm uninstall -g
 
 With no command and piped stdin, cc-statusline renders the statusline.`);
 }
@@ -462,6 +473,55 @@ function install(args) {
   console.log(`Settings: ${settingsFile}`);
 }
 
+function uninstall(args) {
+  const purge = args.includes("--purge");
+  const keepPkg = args.includes("--keep-package");
+  const settingsFile = settingsPath();
+  const configDir = userConfigDir();
+  const configFile = path.join(configDir, "config.json");
+
+  if (!fs.existsSync(settingsFile)) {
+    console.log("No Claude Code settings found. Nothing to uninstall.");
+    return;
+  }
+  const settings = readJsonFile(settingsFile, {});
+  const cmd = get(settings, "statusLine.command", "");
+  if (!cmd || (!cmd.includes("cc-statusline") && !cmd.includes("cc-statusline-cli"))) {
+    console.log("statusLine is not managed by cc-statusline. Nothing to remove.");
+    return;
+  }
+
+  const backupFiles = fs.readdirSync(path.dirname(settingsFile))
+    .filter((f) => f.startsWith("settings.json.bak."))
+    .sort()
+    .reverse();
+  if (backupFiles.length > 0) {
+    const latestBackup = path.join(path.dirname(settingsFile), backupFiles[0]);
+    fs.copyFileSync(latestBackup, settingsFile);
+    console.log(`Restored settings from ${latestBackup}`);
+  } else {
+    delete settings.statusLine;
+    writeJsonFile(settingsFile, settings);
+    console.log("Removed statusLine from settings (no backup found).");
+  }
+
+  if (purge && fs.existsSync(configDir)) {
+    fs.rmSync(configDir, { recursive: true });
+    console.log(`Removed config directory: ${configDir}`);
+  } else if (fs.existsSync(configFile)) {
+    console.log(`Kept config at ${configFile} (use --purge to remove).`);
+  }
+
+  if (!keepPkg) {
+    console.log("Removing npm package...");
+    try {
+      childProcess.execFileSync("npm", ["uninstall", "-g", "cc-statusline-cli"], { stdio: "inherit" });
+    } catch {
+      console.log("npm uninstall failed (package may already be removed).");
+    }
+  }
+}
+
 async function main() {
   const [cmd = ""] = process.argv.slice(2);
   if (!cmd && !process.stdin.isTTY) {
@@ -481,6 +541,9 @@ async function main() {
     case "install":
     case "configure":
       install(process.argv.slice(3));
+      break;
+    case "uninstall":
+      uninstall(process.argv.slice(3));
       break;
     case "version":
       console.log(`v${readPackageJson().version}`);
