@@ -38,7 +38,12 @@ jobs:
           CCSL_CONFIG_DIR: ${{ runner.temp }}/ccsl-npm-config
           CCSL_SETTINGS_FILE: ${{ runner.temp }}/ccsl-npm-settings.json
         run: |
-          npm install -g . --prefix "${{ runner.temp }}/ccsl-prefix" --ignore-scripts=false --foreground-scripts
+          npm install -g . --prefix "${{ runner.temp }}/ccsl-prefix" --ignore-scripts=true
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            "${{ runner.temp }}/ccsl-prefix/cc-statusline.cmd" install --force
+          else
+            "${{ runner.temp }}/ccsl-prefix/bin/cc-statusline" install --force
+          fi
           node -e "const s=require(process.env.CCSL_SETTINGS_FILE); if (!s.statusLine || !s.statusLine.command.includes('cc-statusline.js')) process.exit(1)"
 
   smoke:
