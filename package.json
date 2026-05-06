@@ -1,6 +1,6 @@
 {
   "name": "cc-statusline-cli",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Configurable multi-line statusline command for Claude Code.",
   "license": "MIT",
   "homepage": "https://github.com/tenondecrpc/cc-statusline#readme",
@@ -23,25 +23,19 @@
   },
   "files": [
     "bin/",
-    "scripts/",
-    "lib/",
     "presets/",
-    "statusline.sh",
-    "install.sh",
-    "uninstall.sh",
     "README.md",
     "LICENSE",
     "screenshot.png"
   ],
   "scripts": {
     "test": "bash tests/test.sh",
-    "prepack": "bash tests/test.sh",
-    "postinstall": "node ./scripts/npm-postinstall.js"
+    "prepack": "bash tests/test.sh"
   },
   "keywords": [
     "claude-code",
     "statusline",
-    "bash",
-    "jq"
+    "node",
+    "windows"
   ]
 }

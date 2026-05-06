@@ -82,6 +82,23 @@ run_npm_cli_regressions() {
     PASS=$((PASS + 1))
   fi
 
+  if jq -e '
+    (.scripts.postinstall? == null) and
+    (((.files // []) | index("scripts/")) == null) and
+    (((.files // []) | index("lib/")) == null) and
+    (((.files // []) | index("statusline.sh")) == null) and
+    (((.files // []) | index("install.sh")) == null) and
+    (((.files // []) | index("uninstall.sh")) == null) and
+    (((.files // []) | index("bin/")) != null) and
+    (((.files // []) | index("presets/")) != null)
+  ' "$ROOT_DIR/package.json" >/dev/null 2>&1; then
+    printf '\033[32m✓\033[0m npm package is Node-only\n'
+    PASS=$((PASS + 1))
+  else
+    printf '\033[31m✗\033[0m npm package regression: package should stay Node-only\n'
+    FAIL=$((FAIL + 1))
+  fi
+
   settings_file="$TMP_CONFIG/npm-settings.json"
   if CCSL_CONFIG_DIR="$TMP_CONFIG/npm-config" CCSL_SETTINGS_FILE="$settings_file" \
       node "$ROOT_DIR/bin/cc-statusline.js" install --force >/dev/null 2>&1 &&
