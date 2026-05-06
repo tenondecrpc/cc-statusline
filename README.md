@@ -15,7 +15,7 @@ Opus xhigh │ ctx        ⣿⣿⣿⣿⣿ 58% │ 5h          ⣿⣿ 76% 22:00 �
 ### npm
 
 ```bash
-npm install -g cc-statusline
+npm install -g cc-statusline-cli
 ```
 
 ### Homebrew
@@ -49,8 +49,8 @@ cc-statusline install --force
 Update or remove the package with the same tool you used to install it:
 
 ```bash
-npm update -g cc-statusline
-npm uninstall -g cc-statusline
+npm update -g cc-statusline-cli
+npm uninstall -g cc-statusline-cli
 ```
 
 ```bash
