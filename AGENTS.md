@@ -202,7 +202,7 @@ Every PR should answer:
 Two repositories are involved on every release:
 
 - `tenondecrpc/cc-statusline` (this repo): source, `package.json`, GitHub release, tarball.
-- `tenondecrpc/homebrew-tap`: the `Formula/cc-statusline.rb` brew users consume.
+- `tenondecrpc/homebrew-tap`: the `Formula/cc-statusline-cli.rb` brew users consume.
 
 The Homebrew formula does not live in this repo. Keeping a copy here causes the two checkouts to drift on every release, so the tap is the single source of truth for the formula.
 
@@ -226,21 +226,21 @@ The Homebrew formula does not live in this repo. Keeping a copy here causes the 
    curl -fsSL "https://github.com/tenondecrpc/cc-statusline/archive/refs/tags/vX.Y.Z.tar.gz" \
      | shasum -a 256
    ```
-6. In a checkout of `tenondecrpc/homebrew-tap`, edit `Formula/cc-statusline.rb`:
+6. In a checkout of `tenondecrpc/homebrew-tap`, edit `Formula/cc-statusline-cli.rb`:
    - update `url` to the new tag tarball,
    - update `sha256` to the new hash,
    - remove any `revision N` line if present (a new source version resets it).
 7. Validate, commit, push the tap:
    ```bash
-   brew style Formula/cc-statusline.rb
-   git add Formula/cc-statusline.rb
-   git commit -m "chore: bump cc-statusline to vX.Y.Z"
+   brew style Formula/cc-statusline-cli.rb
+   git add Formula/cc-statusline-cli.rb
+   git commit -m "chore: bump cc-statusline-cli to vX.Y.Z"
    git push origin main
    ```
 8. Verify end to end:
    ```bash
    brew update
-   brew upgrade cc-statusline
+   brew upgrade cc-statusline-cli
    cc-statusline version
    ```
 
@@ -248,11 +248,11 @@ The Homebrew formula does not live in this repo. Keeping a copy here causes the 
 
 When only the formula needs to change (wrong `opt_libexec` usage, missing dependency, caveats text), do not cut a new source release. In the tap:
 
-1. Add or increment `revision N` after `license` in `Formula/cc-statusline.rb`.
+1. Add or increment `revision N` after `license` in `Formula/cc-statusline-cli.rb`.
 2. Apply the formula fix.
 3. `brew style`, commit, push.
 
-`brew upgrade cc-statusline` picks up the new revision for existing installs.
+`brew upgrade cc-statusline-cli` picks up the new revision for existing installs.
 
 ### Path stability
 

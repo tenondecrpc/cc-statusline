@@ -24,7 +24,7 @@ Homebrew install is for macOS only.
 
 ```bash
 brew tap tenondecrpc/tap
-brew install cc-statusline
+brew install cc-statusline-cli
 ```
 
 After installation, restart Claude Code or open a new session. The statusline will appear automatically.
@@ -54,8 +54,8 @@ npm uninstall -g cc-statusline-cli
 ```
 
 ```bash
-brew upgrade cc-statusline
-brew uninstall cc-statusline
+brew upgrade cc-statusline-cli
+brew uninstall cc-statusline-cli
 ```
 
 ## License
