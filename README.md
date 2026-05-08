@@ -14,7 +14,7 @@ Opus xhigh │ ctx        ⣿⣿⣿⣿⣿ 58% │ 5h          ⣿⣿ 76% 22:00 �
 
 ### npm
 
-Works on macOS, Linux, and Windows.
+Works on macOS, Linux, and Windows. Requires [Node.js](https://nodejs.org/en/download) to be installed.
 
 ```bash
 npm install -g cc-statusline-cli
