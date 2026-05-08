@@ -119,12 +119,17 @@ function get(obj, dotted, fallback = undefined) {
 
 function colorLevel() {
   if (process.env.NO_COLOR) return 0;
+  if (process.env.FORCE_COLOR === "0") return 0;
   if (process.env.COLORTERM === "truecolor" || process.env.COLORTERM === "24bit") return 3;
   const term = process.env.TERM || "";
   if (term.includes("256color") || term.includes("truecolor") || term === "alacritty" || term === "xterm-kitty") return 2;
   if (/^(xterm|screen|tmux|linux|rxvt)/.test(term)) return 1;
+  if (process.platform === "win32") {
+    if (process.env.WT_SESSION || process.env.TERM_PROGRAM === "vscode" || process.env.ConEmuANSI === "ON") return 2;
+    return 1;
+  }
   if (!term || term === "dumb") return 0;
-  return process.platform === "win32" ? 1 : 1;
+  return 1;
 }
 
 const colors = {
