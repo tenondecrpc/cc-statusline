@@ -7,7 +7,7 @@ It shows your current model, context usage, and rate-limit windows directly in t
 ![Default cc-statusline output](./screenshot.png)
 
 ```text
-Opus xhigh │ ctx        ⣿⣿⣿⣿⣿ 58% │ 5h          ⣿⣿ 76% 22:00 │ 7d    ⣿⣿⣿⣿⣿⣿⣿⣿ 29% May 06 02:00
+Opus xhigh │ ctx(1m)        ⣿⣿⣿⣿⣿ 58% │ 5h          ⣿⣿ 76% 22:00 │ 7d    ⣿⣿⣿⣿⣿⣿⣿⣿ 29% May 06 02:00
 ```
 
 ## Install
@@ -142,6 +142,22 @@ Color names: `black`, `red`, `green`, `yellow`, `blue`, `magenta`, `cyan`, `whit
     "directory": { "truncate": 20 },
     "context_bar": { "width": 8 },
     "cost": { "hide_below": 0.10 }
+  }
+}
+```
+
+### Context window label
+
+The context bar prints the model context size next to the label, e.g. `ctx(1m)` or `ctx(200k)`. The size is read from `context_window.context_window_size` in the Claude Code session payload and formatted as `200k`, `1m`, `1.5m`, etc.
+
+If the field is missing (Claude Code did not provide it), the bar falls back to `modules.context_bar.default_size`:
+
+```json
+{
+  "modules": {
+    "context_bar": {
+      "default_size": "200k"
+    }
   }
 }
 ```

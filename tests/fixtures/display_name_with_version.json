@@ -9,7 +9,7 @@
     "total_lines_added": 156,
     "total_lines_removed": 23
   },
-  "context_window": { "used_percentage": 58 },
+  "context_window": { "used_percentage": 58, "context_window_size": 1000000 },
   "rate_limits": {
     "five_hour": { "used_percentage": 76, "resets_at": 1778162400 },
     "seven_day": { "used_percentage": 29, "resets_at": 1778457600 }

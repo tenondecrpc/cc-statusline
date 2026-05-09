@@ -242,7 +242,31 @@ function moduleEffort(input, config) {
   return level ? wrap(config, get(config, "colors.effort", "gray"), level) : "";
 }
 
-function moduleBasicStatusline(input) {
+function formatTokens(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v) || v <= 0) return "";
+  if (v >= 1_000_000) {
+    const m = v / 1_000_000;
+    return Number.isInteger(m) ? `${m}m` : `${m.toFixed(1)}m`;
+  }
+  if (v >= 1000) {
+    const k = v / 1000;
+    return Number.isInteger(k) ? `${k}k` : `${k.toFixed(1)}k`;
+  }
+  return String(Math.round(v));
+}
+
+function contextSizeLabel(input, config) {
+  const tokens = get(input, "context_window.context_window_size", null);
+  if (tokens != null && tokens !== "") {
+    const label = formatTokens(tokens);
+    if (label) return label;
+  }
+  const fallback = get(config, "modules.context_bar.default_size", "200k");
+  return fallback ? String(fallback) : "";
+}
+
+function moduleBasicStatusline(input, config) {
   const reset = "\x1b[0m";
   const yellow = "\x1b[33m";
   const dim = "\x1b[2m";
@@ -254,9 +278,11 @@ function moduleBasicStatusline(input) {
   const seven = get(input, "rate_limits.seven_day.used_percentage", "");
   const fiveReset = get(input, "rate_limits.five_hour.resets_at", "");
   const sevenReset = get(input, "rate_limits.seven_day.resets_at", "");
+  const size = contextSizeLabel(input, config);
+  const ctxLabel = size ? `ctx(${size})` : "ctx";
   const parts = [];
   if (model) parts.push(color ? `${yellow}${model}${reset}${effort ? ` ${dim}${effort}${reset}` : ""}` : `${model}${effort ? ` ${effort}` : ""}`);
-  parts.push(used !== "" ? `ctx ${progress(used)}` : `ctx ${emptyBar()} ${color ? `${dim}--${reset}` : "--"}`);
+  parts.push(used !== "" ? `${ctxLabel} ${progress(used)}` : `${ctxLabel} ${emptyBar()} ${color ? `${dim}--${reset}` : "--"}`);
   let fivePart = five !== "" ? `5h ${progress(five)}` : `5h ${emptyBar()} ${color ? `${dim}--${reset}` : "--"}`;
   if (five !== "" && fiveReset) fivePart += ` ${color ? `${dim}${formatTime(fiveReset)}${reset}` : formatTime(fiveReset)}`;
   parts.push(fivePart);
@@ -312,7 +338,10 @@ function moduleContextBar(input, config) {
   const pct = get(input, "context_window.used_percentage", 0);
   const width = Number(get(config, "modules.context_bar.width", 12));
   const label = get(config, "modules.context_bar.label", "ctx");
-  return `${label ? `${label} ` : ""}${progress(pct, width)}`;
+  const size = contextSizeLabel(input, config);
+  let labelOut = "";
+  if (label) labelOut = size ? `${label}(${size}) ` : `${label} `;
+  return `${labelOut}${progress(pct, width)}`;
 }
 
 function thresholdColor(config, pct, ok, warn, crit) {

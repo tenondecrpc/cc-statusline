@@ -44,6 +44,34 @@ mod_effort() {
   ccsl_wrap "$(cfg '.colors.effort // "gray"')" "$level"
 }
 
+ccsl_format_tokens() {
+  awk -v n="${1:-0}" 'BEGIN {
+    if (n+0 <= 0) exit
+    if (n >= 1000000) {
+      v = n / 1000000
+      if (v == int(v)) printf "%dm", v; else printf "%.1fm", v
+    } else if (n >= 1000) {
+      v = n / 1000
+      if (v == int(v)) printf "%dk", v; else printf "%.1fk", v
+    } else {
+      printf "%d", n
+    }
+  }'
+}
+
+ccsl_context_size_label() {
+  local label tokens
+  tokens=$(printf '%s' "$INPUT_JSON" | jq -r '.context_window.context_window_size // empty')
+  if [ -n "$tokens" ] && [ "$tokens" != "null" ]; then
+    label=$(ccsl_format_tokens "$tokens")
+    if [ -n "$label" ]; then
+      printf '%s' "$label"
+      return 0
+    fi
+  fi
+  cfg '.modules.context_bar.default_size // "200k"'
+}
+
 basic_bg_color_for() {
   local pct="$1"
   if awk "BEGIN {exit !($pct >= 80)}"; then
@@ -98,7 +126,7 @@ basic_format_time() {
 }
 
 mod_basic_statusline() {
-  local model effort used five_hour seven_day five_reset seven_reset
+  local model effort used five_hour seven_day five_reset seven_reset size_label
   model=$(printf '%s' "$INPUT_JSON" | jq -r '.model.display_name // empty')
   effort=$(printf '%s' "$INPUT_JSON" | jq -r '.effort.level // empty')
   used=$(printf '%s' "$INPUT_JSON" | jq -r '.context_window.used_percentage // empty')
@@ -106,19 +134,26 @@ mod_basic_statusline() {
   seven_day=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.seven_day.used_percentage // empty')
   five_reset=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.five_hour.resets_at // empty')
   seven_reset=$(printf '%s' "$INPUT_JSON" | jq -r '.rate_limits.seven_day.resets_at // empty')
+  size_label=$(ccsl_context_size_label)
 
   local reset='\033[0m' yellow='\033[33m' dim='\033[2m' sep=' │ '
-  local part_model="" part_ctx part_5h part_7d t dt
+  local part_model="" part_ctx part_5h part_7d t dt ctx_label
 
   if [ -n "$model" ]; then
     part_model="$(printf "${yellow}%s${reset}" "$model")"
     [ -n "$effort" ] && part_model+="$(printf " ${dim}%s${reset}" "$effort")"
   fi
 
-  if [ -n "$used" ]; then
-    part_ctx="$(printf "ctx %s" "$(basic_render_progress "$used")")"
+  if [ -n "$size_label" ]; then
+    ctx_label="ctx(${size_label})"
   else
-    part_ctx="$(printf "ctx %s ${dim}--${reset}" "$(basic_make_empty_bar)")"
+    ctx_label="ctx"
+  fi
+
+  if [ -n "$used" ]; then
+    part_ctx="$(printf "%s %s" "$ctx_label" "$(basic_render_progress "$used")")"
+  else
+    part_ctx="$(printf "%s %s ${dim}--${reset}" "$ctx_label" "$(basic_make_empty_bar)")"
   fi
 
   if [ -n "$five_hour" ]; then
@@ -237,13 +272,18 @@ format_reset_time() {
 }
 
 mod_context_bar() {
-  local pct width label
+  local pct width label size_label
   pct=$(printf '%s' "$INPUT_JSON" | jq -r '.context_window.used_percentage // 0')
   width=$(cfg '.modules.context_bar.width // 12')
   label=$(cfg '.modules.context_bar.label // "ctx"')
+  size_label=$(ccsl_context_size_label)
 
   if [ -n "$label" ] && [ "$label" != "null" ]; then
-    printf '%s ' "$label"
+    if [ -n "$size_label" ]; then
+      printf '%s(%s) ' "$label" "$size_label"
+    else
+      printf '%s ' "$label"
+    fi
   fi
   basic_render_progress "$pct" "$width"
 }

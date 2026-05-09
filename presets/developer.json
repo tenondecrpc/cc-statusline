@@ -9,7 +9,12 @@
     "model": { "with_version": true, "with_effort": true },
     "directory": { "tilde": true, "truncate": 35 },
     "git": { "show_status": true, "show_ahead_behind": true },
-    "context_bar": { "label": "ctx", "width": 12, "thresholds_pct": [70, 90] },
+    "context_bar": {
+      "label": "ctx",
+      "width": 12,
+      "thresholds_pct": [70, 90],
+      "default_size": "200k"
+    },
     "rate_limit": { "bar_width": 12, "thresholds_pct": [60, 80] },
     "cost": { "format": "$%.2f", "hide_below": 0.01 }
   },
